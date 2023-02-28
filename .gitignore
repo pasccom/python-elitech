@@ -1,0 +1,6 @@
+# Coverage results
+.coverage
+htmlcov/
+
+# Caches
+__pycache__/

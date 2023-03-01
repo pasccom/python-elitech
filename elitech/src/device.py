@@ -34,7 +34,6 @@ supportedDevices = [
     {'VId': 0x04d8, 'PId':0x0012, 'name': 'Elitech RC-18'               },
     {'VId': 0x04d8, 'PId':0x0013, 'name': 'Elitech RC-19'               },
     {'VId': 0x04d8, 'PId':0x1005, 'name': 'Elitech ST5'                 },
-    {'VId': 0x04d8, 'PId':0x0033, 'name': 'Elitech RC-51'               },
     {'VId': 0x0416, 'PId':0x3006, 'name': 'Elitech LogEt 6'             },
     {'VId': 0x0416, 'PId':0x4008, 'name': 'Elitech LogEt 8'             },
     {'VId': 0x0416, 'PId':0x4308, 'name': 'Elitech LogEt 8 Life Science'},

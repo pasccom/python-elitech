@@ -502,16 +502,21 @@ class RecordRead(Command):
             r = r0
             while (8*(r - r0) < a.range.len):
                 record = Record.parse(a[(8*r):(8*(r + 1))])
+
                 if record is None:
                     if self.__range.stop is None:
                         break
-                    print(f"{r + 1:-4d}\t---------- --------\tNo data")
-                elif (record.flags & Record.Flags.Pause):
-                    print(f"{r + 1:-4d}\t{record.time}\tPause")
+                    print(f"{r + 1:-4d}\t---------- --------\t---\tNo data")
+                elif record.pause:
+                    print(f"{r + 1:-4d}\t{record.time}\t{record.flagStr}\tPause")
+                elif record.stop:
+                    print(f"{r + 1:-4d}\t{record.time}\t{record.flagStr}\tStop")
+                elif record.error:
+                    print(f"{r + 1:-4d}\t{record.time}\t{record.flagStr}\tError")
                 elif record.humidity is None:
-                    print(f"{r + 1:-4d}\t{record.time}\t{record.temperature:.1f}°C")
+                    print(f"{r + 1:-4d}\t{record.time}\t{record.flagStr}\t{record.temperature:.1f}°C")
                 else:
-                    print(f"{r + 1:-4d}\t{record.time}\t{record.temperature:.1f}°C\t{record.humidity:.1f}%")
+                    print(f"{r + 1:-4d}\t{record.time}\t{record.flagStr}\t{record.temperature:.1f}°C\t{record.humidity:.1f}%")
                 r += s
             r0 = r
 

@@ -32,11 +32,41 @@ class Record:
         Vibr  = 0b00100000
         Sign2 = 0b01000000
         Error = 0b10000000
+
     def __init__(self, t, temp, flags=0, humi=None):
         self.time = t
         self.temperature = temp
         self.humidity = humi
-        self.flags = flags
+        self.__flags = flags
+
+    @property
+    def pause(self):
+        return bool(self.__flags & Record.Flags.Pause)
+
+    @property
+    def stop(self):
+        return bool(self.__flags & Record.Flags.Stop)
+
+    @property
+    def error(self):
+        return bool(self.__flags & Record.Flags.Error)
+
+    @property
+    def flagStr(self):
+        flags = ''
+        if (self.__flags & Record.Flags.Mark):
+            flags += 'M'
+        else:
+            flags += '-'
+        if (self.__flags & Record.Flags.Light):
+            flags += 'L'
+        else:
+            flags += '-'
+        if (self.__flags & Record.Flags.Vibr):
+            flags += 'V'
+        else:
+            flags += '-'
+        return flags
 
     @classmethod
     def parse(cls, frame, protocol=0x20):

@@ -105,23 +105,23 @@ $ python elitech help [command]
 ### Devices
 The list of supported devices can be obtained with
 ```sh
-$ python elitech devices list
+$ python elitech device list
 ```
 
 ### Parameters
 The list of supported parameters (with their meaning) can be obtained with
 ```sh
-$ python elitech parameters list
+$ python elitech parameter list
 ```
 
 To get the current values for given parameters from a device, use
 ```sh
-$ python elitech --device [/dev/path] parameters get [parameter-name]
+$ python elitech --device [/dev/path] parameter get [parameter-name]
 ```
 where `/dev/path` stands for the path to the HID device. Similarly, a parameter
 can be set into a device using
 ```
-$ python elitech --device [/dev/path] parameters set [parameter-name] [value]
+$ python elitech --device [/dev/path] parameter set [parameter-name] [value]
 ```
 Multiple parameters or multiple parameter/value pairs can be get or set
 in a single command.
@@ -129,7 +129,7 @@ in a single command.
 Notice that the `device-time` is read-only and the device time is effectively
 set by setting the `configuration-time` parameter. This can simply be done with
 ```sh
-$ python elitech --device [/dev/path] parameters get configuration-time "$(date '+%Y-%m-%d %H:%M:%S')"
+$ python elitech --device [/dev/path] parameter set configuration-time "$(date '+%Y-%m-%d %H:%M:%S')"
 ```
 
 ### Records
@@ -147,12 +147,12 @@ For debugging purposes (for example, to configure an unsupported parameter,
 or give a parameter an unsupported value), the configuration can directly be
 accessed by address. To get the current values in a given address range, use
 ```sh
-$ python elitech --device [/dev/path] parameters get [addressRange]
+$ python elitech --device [/dev/path] parameter get [addressRange]
 ```
 
 To set new values in a given address range, use
 ```sh
-$ python elitech --device [/dev/path] parameters get [addressRange] [value ...]
+$ python elitech --device [/dev/path] parameter set [addressRange] [value ...]
 ```
 
 PLANNED DEVELOPMENTS

@@ -80,6 +80,9 @@ class Device:
         self.__productId = None
         self.__descriptor = None
 
+    def __bool__(self):
+        return bool(self.path)
+
     def __enter__(self):
         if self.path:
             self.__dev = open(self.path, 'rb+')

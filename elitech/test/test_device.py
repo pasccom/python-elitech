@@ -31,6 +31,7 @@ class TestDevice(unittest.TestCase):
     def testNone(self):
         dev = Device('')
         self.assertEqual(dev.path, '')
+        self.assertFalse(bool(dev))
         self.assertIsNone(dev.vendorId)
         self.assertIsNone(dev.productId)
         self.assertIsNone(dev.name)
@@ -40,6 +41,7 @@ class TestDevice(unittest.TestCase):
     def testEmpty(self):
         dev = Device('')
         self.assertEqual(dev.path, '')
+        self.assertFalse(bool(dev))
         self.assertIsNone(dev.vendorId)
         self.assertIsNone(dev.productId)
         self.assertIsNone(dev.name)
@@ -49,10 +51,12 @@ class TestDevice(unittest.TestCase):
     def testString(self):
         dev = Device('/dev/null')
         self.assertEqual(dev.path, Path('/dev/null'))
+        self.assertTrue(bool(dev))
 
     def testPath(self):
         dev = Device(Path('/dev/null'))
         self.assertEqual(dev.path, Path('/dev/null'))
+        self.assertTrue(bool(dev))
 
     def testNonExistingString(self):
         with self.assertRaises(ValueError) as e:

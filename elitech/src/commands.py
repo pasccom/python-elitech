@@ -207,6 +207,9 @@ class ConfigRead(Command):
         ranges = Range.optimize([p.range for p in self.__params])
         print(ranges)
 
+        if not self.__dev:
+            warning(f"No device selected. Only there to check the request.")
+
         answers = []
         for r in ranges:
             frame = Frame(Frame.Operation.GetParameter, r.start, r.len)
@@ -251,6 +254,9 @@ class AddressRead(Command):
     def execute(self):
         ranges = Range.optimize(self.__ranges)
         print(ranges)
+
+        if not self.__dev:
+            warning(f"No device selected. Only there to check the request.")
 
         answers = []
         for r in ranges:
@@ -332,6 +338,9 @@ class ConfigWrite(Command):
         ranges = Range.optimize([p.range for p in self.__params])
         print(ranges)
 
+        if not self.__dev:
+            warning(f"No device selected. Only there to check the request.")
+
         answers = []
         for r in ranges:
             frame = Frame(Frame.Operation.GetParameter, r.start, r.len)
@@ -405,6 +414,9 @@ class AddressWrite(Command):
         ranges = Range.optimize(self.__ranges)
         print(ranges)
 
+        if not self.__dev:
+            warning(f"No device selected. Only there to check the request.")
+
         answers = []
         for r in ranges:
             frame = Frame(Frame.Operation.GetParameter, r.start, r.len)
@@ -454,7 +466,6 @@ class AddressWrite(Command):
         return b
 
 
-
 class RecordRead(Command):
     '''
         Read and interpret records from an Elitech device
@@ -474,6 +485,9 @@ class RecordRead(Command):
             warning(f"Ignored parameters: \"{params}\"")
 
     def execute(self):
+        if not self.__dev:
+            warning(f"No device selected. Only there to check the request.")
+
         answers = []
         r = self.__range.start or 0
         s = self.__range.step or 1

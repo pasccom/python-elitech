@@ -19,7 +19,7 @@ import unittest
 
 from PythonUtils import testdata
 
-from elitech.src.record import Record
+from elitech.record import Record
 
 from datetime import datetime
 

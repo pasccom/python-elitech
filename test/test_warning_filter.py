@@ -21,7 +21,7 @@ from PythonUtils import testdata
 
 import warnings
 
-from elitech.src.device import WarningFilter
+from elitech.device import WarningFilter
 
 class TestWarning1(Warning):
     pass

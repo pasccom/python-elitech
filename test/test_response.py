@@ -19,8 +19,8 @@ import unittest
 
 from PythonUtils import testdata
 
-from elitech.src.parameters import Range
-from elitech.src.frames     import Response
+from elitech.parameters import Range
+from elitech.frames     import Response
 
 class TestResponse(unittest.TestCase):
     @testdata.TestData([

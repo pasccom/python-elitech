@@ -16,9 +16,9 @@
 # along with python-elitech. If not, see <http://www.gnu.org/licenses/>
 
 try:
-    from .src.main import main
+    from .main import main
 except ImportError:
-    from src.main import main
+    from main import main
 
 main()
 

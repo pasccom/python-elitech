@@ -19,7 +19,7 @@ import unittest
 
 from PythonUtils import testdata
 
-from elitech.src.frames import Frame
+from elitech.frames import Frame
 
 class TestFrame(unittest.TestCase):
     def testInvalidOperation(self):

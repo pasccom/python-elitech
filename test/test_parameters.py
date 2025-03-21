@@ -23,19 +23,19 @@ from enum import Enum
 import datetime
 import math
 
-from elitech.src.parameters import Range
-from elitech.src.parameters import StringParameter
-from elitech.src.parameters import DateTimeParameter
-from elitech.src.parameters import DWordParameter
-from elitech.src.parameters import WordParameter
-from elitech.src.parameters import ByteParameter
-from elitech.src.parameters import EnumParameter
-from elitech.src.parameters import HalfByteParameter
-from elitech.src.parameters import BitParameter
-from elitech.src.parameters import EnumBitParameter
-from elitech.src.parameters import FloatParameter
-from elitech.src.parameters import TimeSpanParameter
-from elitech.src.parameters import TimeZoneParameter
+from elitech.parameters import Range
+from elitech.parameters import StringParameter
+from elitech.parameters import DateTimeParameter
+from elitech.parameters import DWordParameter
+from elitech.parameters import WordParameter
+from elitech.parameters import ByteParameter
+from elitech.parameters import EnumParameter
+from elitech.parameters import HalfByteParameter
+from elitech.parameters import BitParameter
+from elitech.parameters import EnumBitParameter
+from elitech.parameters import FloatParameter
+from elitech.parameters import TimeSpanParameter
+from elitech.parameters import TimeZoneParameter
 
 class TestStringParameter(unittest.TestCase):
     @testdata.TestData([

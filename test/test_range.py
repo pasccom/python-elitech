@@ -19,7 +19,7 @@ import unittest
 
 from PythonUtils import testdata
 
-from elitech.src.parameters import Range
+from elitech.parameters import Range
 
 class TestRange(unittest.TestCase):
     @testdata.TestData([

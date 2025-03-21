@@ -19,7 +19,7 @@ import unittest
 
 from PythonUtils import testdata
 
-from elitech.src.commands import RecordRead
+from elitech.commands import RecordRead
 
 class TestSliceFromString(unittest.TestCase):
     @testdata.TestData([

@@ -18,7 +18,7 @@
 from pathlib import Path
 
 import sys
-sys.path.insert(0, str(Path(__file__).parents[2]))
+sys.path.insert(0, str(Path(__file__).parents[1]))
 
 from .test_warning_filter import TestWarningFilter
 from .test_device     import TestDevice

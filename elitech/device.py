@@ -19,6 +19,8 @@ from pathlib import Path
 
 import sys
 import warnings
+
+sys.path.insert(0, str(Path(__file__).parents[1] / 'HIDParser'))
 sys.path.insert(0, str(Path(__file__).parents[2] / 'HIDParser'))
 
 from hid_parser import ReportDescriptor, HIDComplianceWarning

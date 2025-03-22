@@ -18,7 +18,7 @@
 from enum import Enum
 from warnings import warn as warning
 
-from .parameters import Range
+from parameters import Range
 
 class Response:
     def __init__(self, range, data):

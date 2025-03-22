@@ -1,0 +1,34 @@
+# using https://setuptools.pypa.io/en/latest/userguide/package_discovery.html#flat-layout
+
+[project]
+name = "elitech"
+version = "0.0.1"
+description = "Library and command line tool for Elitech data logger"
+readme = "README.md"
+authors = [
+	{name = "Pascal Combes", email = "pascom@orange.fr"},
+]
+keywords = ["elitech", "logger"]
+classifiers = [
+	"Programming Language :: Python",
+	"Programming Language :: Python :: 3.13",
+]
+requires-python = ">=3.4, <4"
+
+[project.urls]
+repository = "https://github.com/pasccom/python-elitech"
+
+[project.scripts]
+elitech = "elitech.src.main:main"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+include = [
+	"elitech*",
+	"HIDParser.hid_parser*",
+]
+exclude = [
+	"elitech.test*",
+]

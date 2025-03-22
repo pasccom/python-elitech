@@ -34,7 +34,7 @@ column of the below table.
 | Name                         | Vendor Id  | Product Id | udev | Tested |
 |:-----------------------------|:----------:|:----------:|:----:|:------:|
 | Elitech RC-51                |   0x04d8   | 0x0033     | Yes  | No     |
-| Elitech RC-51H               |   0x04d8   |   0x0133   | Yes  | No     |
+| Elitech RC-51H               |   0x04d8   |   0x0133   | Yes  | Yes    |
 | Elitech RC-5+                |   0x04d8   |   0x3005   | Yes  | Yes    |
 | Elitech RC-55                |   0x04d8   |   0x0037   | Yes  | No     |
 | Elitech TemLog 20            |   0x04d8   |   0x1014   | Yes  | No     |

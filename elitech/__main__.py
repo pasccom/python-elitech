@@ -20,6 +20,5 @@ try:
 except ImportError:
     from src.main import main
 
-import sys
+main()
 
-main(sys.argv[1:])

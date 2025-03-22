@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with python-elitech. If not, see <http://www.gnu.org/licenses/>
 
-from .device import Device
-from .parameters import Parameters
-from .parameters import Range
-from .frames import Frame
-from .frames import Response
-from .record import Record
+from device import Device
+from parameters import Parameters
+from parameters import Range
+from frames import Frame
+from frames import Response
+from record import Record
 
 from warnings import warn as warning
 

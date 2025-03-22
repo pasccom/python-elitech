@@ -4,3 +4,8 @@ htmlcov/
 
 # Caches
 __pycache__/
+
+# package
+dist/
+*.egg-info/
+

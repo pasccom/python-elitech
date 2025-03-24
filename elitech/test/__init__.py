@@ -29,4 +29,4 @@ from .test_range      import TestRange
 from .test_slice      import TestSliceFromString
 from .test_response   import TestResponse
 from .test_parameters import *
-from .test_commands   import *
+#from .test_commands   import *

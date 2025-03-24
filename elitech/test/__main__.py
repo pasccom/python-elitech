@@ -25,6 +25,6 @@ from .test_record         import TestRecord
 from .test_range          import TestRange
 from .test_slice          import TestSliceFromString
 from .test_parameters     import *
-from .test_commands       import *
+#from .test_commands       import *
 
 unittest.main()

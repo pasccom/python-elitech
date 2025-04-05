@@ -72,6 +72,10 @@ USAGE
 ## Installation
 After you downloaded *python-elitech*, no further installation steps are required
 as the (lightweight) dependences are provided as submodules for simplicity.
+You can also install the provided Wheel package using PIP
+```sh
+$ pip install path\to\package.whl
+```
 
 Nevertheless, it is ***highly*** recommended that you add the [rules](60-elitech.rules)
 to `udev`. This can be done by simply copying (as root) this file
@@ -87,6 +91,14 @@ to `dialout` group (instead of `root`). The `dialout` group seemed fine
 on my system, but any other existing group can be chosen by editing the file.
 This will enable a stadard user, provided he is a member of the `dialout` group,
 to access the device.
+
+## Building
+The Wheel package and the source archive can be build using [Setuptools](https://setuptools.pypa.io) 
+with the following command line
+```sh
+$ python -m build
+```
+in the directory where the `pyproject.toml` file is.
 
 ## CLI
 The CLI interface can be invoked using `python elitech [command]`

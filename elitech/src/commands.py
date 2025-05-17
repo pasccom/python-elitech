@@ -571,3 +571,64 @@ class RecordRead(Command):
         else:
             raise ValueError(f'Invalid record selection: {s}')
 
+
+class Stop(Command):
+    '''
+        Stops an Elitech device recording data
+    '''
+
+    cmdName = ('stop')
+
+    def __init__(self, args, *params):
+        self.__dev = Device(args.dev)
+        if (len(params) > 0):
+            params = '", "'.join(params[1:])
+            warning(f"Ignored parameters: \"{params}\"")
+
+    def execute(self):
+        frame = Frame(Frame.Operation.StopCommand, 0, b'\x00')
+
+        if not self.__dev:
+            warning(f"No device selected. Only there to check the request.")
+
+        with self.__dev:
+            self.__dev.write(bytes(frame))
+            try:
+                self.__dev.read()
+            except ValueError as e:
+                warning(f"Got invalid response ({str(e)})")
+
+
+    def __repr__(self):
+        return f'StopCommand({self.__dev})'
+
+
+class Format(Command):
+    '''
+        Format an Elitech device
+    '''
+
+    cmdName = ('format')
+
+    def __init__(self, args, *params):
+        self.__dev = Device(args.dev)
+        if (len(params) > 0):
+            params = '", "'.join(params[1:])
+            warning(f"Ignored parameters: \"{params}\"")
+
+    def execute(self):
+        frame = Frame(Frame.Operation.FormatCommand, 0, b'\x00')
+
+        if not self.__dev:
+            warning(f"No device selected. Only there to check the request.")
+
+        with self.__dev:
+            self.__dev.write(bytes(frame))
+            try:
+                self.__dev.read()
+            except ValueError as e:
+                warning(f"Got invalid response ({str(e)})")
+
+
+    def __repr__(self):
+        return f'FormatCommand({self.__dev})'

@@ -29,12 +29,16 @@ class TestFrame(unittest.TestCase):
         self.assertEqual(str(e.exception), f"Invalid operation: None")
 
     @testdata.TestData([
-        {'op': Frame.Operation.GetParameter, 'offset':        -1},
-        {'op': Frame.Operation.SetParameter, 'offset':        -2},
-        {'op': Frame.Operation.GetRecord,    'offset':        -3},
-        {'op': Frame.Operation.GetParameter, 'offset': 0x1000000},
-        {'op': Frame.Operation.SetParameter, 'offset': 0x1000001},
-        {'op': Frame.Operation.GetRecord,    'offset': 0x1000002},
+        {'op': Frame.Operation.GetParameter,  'offset':        -1},
+        {'op': Frame.Operation.SetParameter,  'offset':        -2},
+        {'op': Frame.Operation.GetRecord,     'offset':        -3},
+        {'op': Frame.Operation.StopCommand,   'offset':        -4},
+        {'op': Frame.Operation.FormatCommand, 'offset':        -5},
+        {'op': Frame.Operation.GetParameter,  'offset': 0x1000000},
+        {'op': Frame.Operation.SetParameter,  'offset': 0x1000001},
+        {'op': Frame.Operation.GetRecord,     'offset': 0x1000002},
+        {'op': Frame.Operation.StopCommand,   'offset': 0x1000004},
+        {'op': Frame.Operation.FormatCommand, 'offset': 0x1000005},
     ])
     def testInvalidOffset(self, op, offset):
         with self.assertRaises(ValueError) as e:
@@ -117,6 +121,14 @@ class TestFrame(unittest.TestCase):
     ])
     def testWriteFrame(self, op, offset, length, expected):
         frame = Frame(op, offset, bytes([0]*length))
+        self.assertEqual(bytes(frame), expected)
+
+    @testdata.TestData([
+        {'op': Frame.Operation.StopCommand,   'expected': bytes([0x33, 0xCC, 0x00, 0x0D, 0xC0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xD0])},
+        {'op': Frame.Operation.FormatCommand, 'expected': bytes([0x33, 0xCC, 0x00, 0x0D, 0xC0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xCF])},
+    ])
+    def testCommand(self, op, expected):
+        frame = Frame(op, 0, b'\x00')
         self.assertEqual(bytes(frame), expected)
 
     @testdata.TestData([

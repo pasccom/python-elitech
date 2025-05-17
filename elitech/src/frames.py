@@ -103,9 +103,11 @@ class Response:
 
 class Frame:
     class Operation(Enum):
-        GetRecord = 0x01
-        GetParameter = 0x03
-        SetParameter = 0x04
+        GetRecord = 0x0001
+        GetParameter = 0x0003
+        SetParameter = 0x0004
+        FormatCommand = 0x02C0
+        StopCommand = 0x03C0
 
     def __init__(self, op, offset, *args):
         if type(op) is not Frame.Operation:
@@ -131,7 +133,7 @@ class Frame:
 
     def __bytes__(self):
         o, l = self.__correctRange()
-        frame = [0x33, 0xCC, 0x00, None, self.__op.value, 0x00, 0x00, (o >> 8) & 0xFF, o & 0xFF, o >> 16, l & 0xFF] + [b for b in self.__data]
+        frame = [0x33, 0xCC, 0x00, None, (self.__op.value) & 0xFF, (self.__op.value >> 8) & 0xFF, 0x00, (o >> 8) & 0xFF, o & 0xFF, (o >> 16) & 0xFF, l & 0xFF] + [b for b in self.__data]
         frame[3] = len(frame) + 1
         return bytes(frame + [sum(frame) & 0xFF])
 

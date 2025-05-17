@@ -117,12 +117,12 @@ class Frame:
         self.__offset = offset
 
         if type(args[0]) is bytes:
-            if (len(args[0]) > 51):
+            if (len(args[0]) > 52):
                 raise ValueError(f"Too much data: {len(args[0])}")
             self.__len = len(args[0])
             self.__data = args[0]
         elif type(args[0]) is int:
-            if (args[0] <= 0) or (args[0] > 51):
+            if (args[0] <= 0) or (args[0] > 52):
                 raise ValueError(f"Invalid length: {args[0]}")
             self.__len = args[0]
             self.__data = []
@@ -133,7 +133,7 @@ class Frame:
         o, l = self.__correctRange()
         frame = [0x33, 0xCC, 0x00, None, self.__op.value, 0x00, 0x00, (o >> 8) & 0xFF, o & 0xFF, o >> 16, l & 0xFF] + [b for b in self.__data]
         frame[3] = len(frame) + 1
-        return bytes([0] + frame + [sum(frame) & 0xFF])
+        return bytes(frame + [sum(frame) & 0xFF])
 
     def __repr__(self): #pragma: no cover
         if self.__data:

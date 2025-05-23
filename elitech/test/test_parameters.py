@@ -129,6 +129,15 @@ class TestDateTimeParameter(unittest.TestCase):
         self.assertEqual(bytes(param), expectedBytes)
 
 
+    def testNow(self):
+        param = DateTimeParameter('test-name', 'Test description', 0, True)
+        before = datetime.datetime.now()
+        param.now()
+        after = datetime.datetime.now()
+        self.assertGreaterEqual(param.value, before)
+        self.assertLessEqual(param.value, after)
+
+
 class TestDWordParameter(unittest.TestCase):
     @testdata.TestData([
         {'o': 0, 'w':  True},

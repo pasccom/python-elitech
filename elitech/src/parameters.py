@@ -192,6 +192,10 @@ class DateTimeParameter(Parameter):
         self._value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
         return self
 
+    def now(self):
+        self._value = datetime.datetime.now()
+        return self
+
     def __str__(self):
         if self._value is None:
             return ''

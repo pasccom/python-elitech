@@ -39,23 +39,32 @@ from elitech.src.parameters import TimeZoneParameter
 
 class TestStringParameter(unittest.TestCase):
     @testdata.TestData([
-        {'o': 0, 'l':  1, 'w':  True},
-        {'o': 1, 'l': 12, 'w':  True},
-        {'o': 0, 'l':  1, 'w':  True},
-        {'o': 1, 'l': 12, 'w':  True},
-        {'o': 0, 'l':  1, 'w': False},
-        {'o': 1, 'l': 12, 'w': False},
-        {'o': 0, 'l':  1, 'w': False},
-        {'o': 1, 'l': 12, 'w': False},
+        {'o': 0, 'l':  1, 'w':  True, 'i': False},
+        {'o': 1, 'l': 12, 'w':  True, 'i': False},
+        {'o': 0, 'l':  1, 'w':  True, 'i': False},
+        {'o': 1, 'l': 12, 'w':  True, 'i': False},
+        {'o': 0, 'l':  1, 'w': False, 'i': False},
+        {'o': 1, 'l': 12, 'w': False, 'i': False},
+        {'o': 0, 'l':  1, 'w': False, 'i': False},
+        {'o': 1, 'l': 12, 'w': False, 'i': False},
+        {'o': 0, 'l':  1, 'w':  True, 'i':  True},
+        {'o': 1, 'l': 12, 'w':  True, 'i':  True},
+        {'o': 0, 'l':  1, 'w':  True, 'i':  True},
+        {'o': 1, 'l': 12, 'w':  True, 'i':  True},
+        {'o': 0, 'l':  1, 'w': False, 'i':  True},
+        {'o': 1, 'l': 12, 'w': False, 'i':  True},
+        {'o': 0, 'l':  1, 'w': False, 'i':  True},
+        {'o': 1, 'l': 12, 'w': False, 'i':  True},
     ])
-    def testConstructor(self, o, l, w):
-        param = StringParameter('test-name', 'Test description', o, l, w)
+    def testConstructor(self, o, l, w, i):
+        param = StringParameter('test-name', 'Test description', o, l, w, i)
         self.assertEqual(param.name, 'test-name')
         self.assertEqual(param.description, 'Test description')
         self.assertEqual(param.offset, o)
         self.assertEqual(param.len, l)
         self.assertEqual(param.range, Range(o, l))
         self.assertEqual(param.writable, w)
+        self.assertEqual(param.immutable, i)
         self.assertIsNone(param.value)
         self.assertEqual(str(param), '')
         self.assertEqual(bytes(param), bytes([0x00]*l))
@@ -66,7 +75,7 @@ class TestStringParameter(unittest.TestCase):
         {'data': b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00', 'expectedValue': '',           },
     ])
     def testParseData(self, data, expectedValue):
-        param = StringParameter('test-name', 'Test description', 0, 12, True)
+        param = StringParameter('test-name', 'Test description', 0, 12, True, False)
         param.parseData(data)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedValue)
@@ -79,7 +88,7 @@ class TestStringParameter(unittest.TestCase):
         {'value': '',             'expectedBytes': b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'},
     ])
     def testParseValue(self, value, expectedBytes):
-        param = StringParameter('test-name', 'Test description', 0, 12, True)
+        param = StringParameter('test-name', 'Test description', 0, 12, True, False)
         param.parseValue(value)
         self.assertEqual(param.value, value)
         self.assertEqual(str(param), value)
@@ -88,19 +97,24 @@ class TestStringParameter(unittest.TestCase):
 
 class TestDateTimeParameter(unittest.TestCase):
     @testdata.TestData([
-        {'o': 0, 'w':  True},
-        {'o': 1, 'w':  True},
-        {'o': 0, 'w': False},
-        {'o': 1, 'w': False},
+        {'o': 0, 'w':  True, 'i': False},
+        {'o': 1, 'w':  True, 'i': False},
+        {'o': 0, 'w': False, 'i': False},
+        {'o': 1, 'w': False, 'i': False},
+        {'o': 0, 'w':  True, 'i':  True},
+        {'o': 1, 'w':  True, 'i':  True},
+        {'o': 0, 'w': False, 'i':  True},
+        {'o': 1, 'w': False, 'i':  True},
     ])
-    def testConstructor(self, o, w):
-        param = DateTimeParameter('test-name', 'Test description', o, w)
+    def testConstructor(self, o, w, i):
+        param = DateTimeParameter('test-name', 'Test description', o, w, i)
         self.assertEqual(param.name, 'test-name')
         self.assertEqual(param.description, 'Test description')
         self.assertEqual(param.offset, o)
         self.assertEqual(param.len, 7)
         self.assertEqual(param.range, Range(o, 7))
         self.assertEqual(param.writable, w)
+        self.assertEqual(param.immutable, i)
         self.assertIsNone(param.value)
         self.assertEqual(str(param), '')
         self.assertEqual(bytes(param), bytes([0x00]*7))
@@ -110,7 +124,7 @@ class TestDateTimeParameter(unittest.TestCase):
         {'data': bytes([0x01, 0x02, 0x00, 0x03, 0x04, 0x05, 0x06]), 'expectedValue': datetime.datetime(2001, 2, 3, 4, 5, 6), 'expectedStr': '2001-02-03 04:05:06'},
     ])
     def testParseData(self, data, expectedValue, expectedStr):
-        param = DateTimeParameter('test-name', 'Test description', 0, True)
+        param = DateTimeParameter('test-name', 'Test description', 0, True, False)
         param.parseData(data)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedStr)
@@ -122,7 +136,7 @@ class TestDateTimeParameter(unittest.TestCase):
         {'value': '2001-02-03 04:05:06', 'expectedValue': datetime.datetime(2001, 2, 3, 4, 5, 6), 'expectedBytes': bytes([0x01, 0x02, 0x00, 0x03, 0x04, 0x05, 0x06])},
     ])
     def testParseValue(self, value, expectedValue, expectedBytes):
-        param = DateTimeParameter('test-name', 'Test description', 0, True)
+        param = DateTimeParameter('test-name', 'Test description', 0, True, False)
         param.parseValue(value)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), value)
@@ -130,7 +144,7 @@ class TestDateTimeParameter(unittest.TestCase):
 
 
     def testNow(self):
-        param = DateTimeParameter('test-name', 'Test description', 0, True)
+        param = DateTimeParameter('test-name', 'Test description', 0, True, False)
         before = datetime.datetime.now()
         param.now()
         after = datetime.datetime.now()
@@ -140,19 +154,24 @@ class TestDateTimeParameter(unittest.TestCase):
 
 class TestDWordParameter(unittest.TestCase):
     @testdata.TestData([
-        {'o': 0, 'w':  True},
-        {'o': 1, 'w':  True},
-        {'o': 0, 'w': False},
-        {'o': 1, 'w': False},
+        {'o': 0, 'w':  True, 'i': False},
+        {'o': 1, 'w':  True, 'i': False},
+        {'o': 0, 'w': False, 'i': False},
+        {'o': 1, 'w': False, 'i': False},
+        {'o': 0, 'w':  True, 'i':  True},
+        {'o': 1, 'w':  True, 'i':  True},
+        {'o': 0, 'w': False, 'i':  True},
+        {'o': 1, 'w': False, 'i':  True},
     ])
-    def testConstructor(self, o, w):
-        param = DWordParameter('test-name', 'Test description', o, w)
+    def testConstructor(self, o, w, i):
+        param = DWordParameter('test-name', 'Test description', o, w, i)
         self.assertEqual(param.name, 'test-name')
         self.assertEqual(param.description, 'Test description')
         self.assertEqual(param.offset, o)
         self.assertEqual(param.len, 4)
         self.assertEqual(param.range, Range(o, 4))
         self.assertEqual(param.writable, w)
+        self.assertEqual(param.immutable, i)
         self.assertIsNone(param.value)
         self.assertEqual(str(param), '')
         self.assertEqual(bytes(param), bytes([0x00, 0x00, 0x00, 0x00]))
@@ -167,7 +186,7 @@ class TestDWordParameter(unittest.TestCase):
         {'data': bytes([0xFF, 0xFF, 0xFF, 0xFF]), 'expectedValue': 0xFFFFFFFF, 'expectedStr': '0xFFFFFFFF'},
     ])
     def testParseData(self, data, expectedValue, expectedStr):
-        param = DWordParameter('test-name', 'Test description', 0, True)
+        param = DWordParameter('test-name', 'Test description', 0, True, False)
         param.parseData(data)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedStr)
@@ -204,7 +223,7 @@ class TestDWordParameter(unittest.TestCase):
         {'value':                         '4294967295', 'expectedValue': 0xFFFFFFFF, 'expectedStr': '0xFFFFFFFF', 'expectedBytes': bytes([0xFF, 0xFF, 0xFF, 0xFF])},
     ])
     def testParseValue(self, value, expectedValue, expectedStr, expectedBytes):
-        param = DWordParameter('test-name', 'Test description', 0, True)
+        param = DWordParameter('test-name', 'Test description', 0, True, False)
         param.parseValue(value)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedStr)
@@ -218,7 +237,7 @@ class TestDWordParameter(unittest.TestCase):
         {'value': 'ABCDEF'},
     ])
     def testParseValueInvalid(self, value):
-        param = DWordParameter('test-name', 'Test description', 0, True)
+        param = DWordParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Invalid value for unsigned integer: {value}")
@@ -234,7 +253,7 @@ class TestDWordParameter(unittest.TestCase):
         {'value':                          '4294967296'},
     ])
     def testParseValueTooLarge(self, value):
-        param = DWordParameter('test-name', 'Test description', 0, True)
+        param = DWordParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Value is too large: {value}")
@@ -246,19 +265,24 @@ class TestDWordParameter(unittest.TestCase):
 
 class TestWordParameter(unittest.TestCase):
     @testdata.TestData([
-        {'o': 0, 'w':  True},
-        {'o': 1, 'w':  True},
-        {'o': 0, 'w': False},
-        {'o': 1, 'w': False},
+        {'o': 0, 'w':  True, 'i': False},
+        {'o': 1, 'w':  True, 'i': False},
+        {'o': 0, 'w': False, 'i': False},
+        {'o': 1, 'w': False, 'i': False},
+        {'o': 0, 'w':  True, 'i':  True},
+        {'o': 1, 'w':  True, 'i':  True},
+        {'o': 0, 'w': False, 'i':  True},
+        {'o': 1, 'w': False, 'i':  True},
     ])
-    def testConstructor(self, o, w):
-        param = WordParameter('test-name', 'Test description', o, w)
+    def testConstructor(self, o, w, i):
+        param = WordParameter('test-name', 'Test description', o, w, i)
         self.assertEqual(param.name, 'test-name')
         self.assertEqual(param.description, 'Test description')
         self.assertEqual(param.offset, o)
         self.assertEqual(param.len, 2)
         self.assertEqual(param.range, Range(o, 2))
         self.assertEqual(param.writable, w)
+        self.assertEqual(param.immutable, i)
         self.assertIsNone(param.value)
         self.assertEqual(str(param), '')
         self.assertEqual(bytes(param), bytes([0x00, 0x00]))
@@ -271,7 +295,7 @@ class TestWordParameter(unittest.TestCase):
         {'data': bytes([0xFF, 0xFF]), 'expectedValue': 0xFFFF, 'expectedStr': '0xFFFF'},
     ])
     def testParseData(self, data, expectedValue, expectedStr):
-        param = WordParameter('test-name', 'Test description', 0, True)
+        param = WordParameter('test-name', 'Test description', 0, True, False)
         param.parseData(data)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedStr)
@@ -300,7 +324,7 @@ class TestWordParameter(unittest.TestCase):
         {'value':              '65535', 'expectedValue': 0xFFFF, 'expectedStr': '0xFFFF', 'expectedBytes': bytes([0xFF, 0xFF])},
     ])
     def testParseValue(self, value, expectedValue, expectedStr, expectedBytes):
-        param = WordParameter('test-name', 'Test description', 0, True)
+        param = WordParameter('test-name', 'Test description', 0, True, False)
         param.parseValue(value)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedStr)
@@ -314,7 +338,7 @@ class TestWordParameter(unittest.TestCase):
         {'value': 'ABCDEF'},
     ])
     def testParseValueInvalid(self, value):
-        param = WordParameter('test-name', 'Test description', 0, True)
+        param = WordParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Invalid value for unsigned integer: {value}")
@@ -330,7 +354,7 @@ class TestWordParameter(unittest.TestCase):
         {'value':               '65536'},
     ])
     def testParseValueTooLarge(self, value):
-        param = WordParameter('test-name', 'Test description', 0, True)
+        param = WordParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Value is too large: {value}")
@@ -341,19 +365,24 @@ class TestWordParameter(unittest.TestCase):
 
 class TestByteParameter(unittest.TestCase):
     @testdata.TestData([
-        {'o': 0, 'w':  True},
-        {'o': 1, 'w':  True},
-        {'o': 0, 'w': False},
-        {'o': 1, 'w': False},
+        {'o': 0, 'w':  True, 'i': False},
+        {'o': 1, 'w':  True, 'i': False},
+        {'o': 0, 'w': False, 'i': False},
+        {'o': 1, 'w': False, 'i': False},
+        {'o': 0, 'w':  True, 'i':  True},
+        {'o': 1, 'w':  True, 'i':  True},
+        {'o': 0, 'w': False, 'i':  True},
+        {'o': 1, 'w': False, 'i':  True},
     ])
-    def testConstructor(self, o, w):
-        param = ByteParameter('test-name', 'Test description', o, w)
+    def testConstructor(self, o, w, i):
+        param = ByteParameter('test-name', 'Test description', o, w, i)
         self.assertEqual(param.name, 'test-name')
         self.assertEqual(param.description, 'Test description')
         self.assertEqual(param.offset, o)
         self.assertEqual(param.len, 1)
         self.assertEqual(param.range, Range(o, 1))
         self.assertEqual(param.writable, w)
+        self.assertEqual(param.immutable, i)
         self.assertIsNone(param.value)
         self.assertEqual(str(param), '')
         self.assertEqual(bytes(param), bytes([0x00]))
@@ -364,7 +393,7 @@ class TestByteParameter(unittest.TestCase):
         {'data': bytes([0xFF]), 'expectedValue': 0xFF, 'expectedStr': '0xFF'},
     ])
     def testParseData(self, data, expectedValue, expectedStr):
-        param = ByteParameter('test-name', 'Test description', 0, True)
+        param = ByteParameter('test-name', 'Test description', 0, True, False)
         param.parseData(data)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedStr)
@@ -385,7 +414,7 @@ class TestByteParameter(unittest.TestCase):
         {'value':        '255', 'expectedValue': 0xFF, 'expectedStr': '0xFF', 'expectedBytes': bytes([0xFF])},
     ])
     def testParseValue(self, value, expectedValue, expectedStr, expectedBytes):
-        param = ByteParameter('test-name', 'Test description', 0, True)
+        param = ByteParameter('test-name', 'Test description', 0, True, False)
         param.parseValue(value)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedStr)
@@ -399,7 +428,7 @@ class TestByteParameter(unittest.TestCase):
         {'value': 'ABCDEF'},
     ])
     def testParseValueInvalid(self, value):
-        param = ByteParameter('test-name', 'Test description', 0, True)
+        param = ByteParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Invalid value for unsigned integer: {value}")
@@ -415,7 +444,7 @@ class TestByteParameter(unittest.TestCase):
         {'value':         '256'},
     ])
     def testParseValueTooLarge(self, value):
-        param = ByteParameter('test-name', 'Test description', 0, True)
+        param = ByteParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Value is too large: {value}")
@@ -451,79 +480,144 @@ class TestEnum16(Enum):
 
 class TestEnumParameter(unittest.TestCase):
     @testdata.TestData([
-        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 0, 'w':  True},
-        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 0, 'w':  True},
-        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 0, 'w': False},
-        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 0, 'w': False},
-        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 0, 'w':  True},
-        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 0, 'w':  True},
-        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 0, 'w': False},
-        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 0, 'w': False},
-        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 0, 'w':  True},
-        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 0, 'w':  True},
-        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 0, 'w': False},
-        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 0, 'w': False},
-        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 0, 'w':  True},
-        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 0, 'w':  True},
-        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 0, 'w': False},
-        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 0, 'w': False},
-        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 1, 'w':  True},
-        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 1, 'w':  True},
-        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 1, 'w': False},
-        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 1, 'w': False},
-        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 1, 'w':  True},
-        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 1, 'w':  True},
-        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 1, 'w': False},
-        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 1, 'w': False},
-        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 1, 'w':  True},
-        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 1, 'w':  True},
-        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 1, 'w': False},
-        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 1, 'w': False},
-        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 1, 'w':  True},
-        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 1, 'w':  True},
-        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 1, 'w': False},
-        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 1, 'w': False},
-        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 7, 'w':  True},
-        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 7, 'w':  True},
-        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 7, 'w': False},
-        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 7, 'w': False},
-        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 7, 'w':  True},
-        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 7, 'w':  True},
-        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 7, 'w': False},
-        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 7, 'w': False},
-        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 7, 'w':  True},
-        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 7, 'w':  True},
-        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 7, 'w': False},
-        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 7, 'w': False},
-        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 7, 'w':  True},
-        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 7, 'w':  True},
-        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 7, 'w': False},
-        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 7, 'w': False},
-        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 8, 'w':  True},
-        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 8, 'w':  True},
-        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 8, 'w': False},
-        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 8, 'w': False},
-        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 8, 'w':  True},
-        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 8, 'w':  True},
-        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 8, 'w': False},
-        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 8, 'w': False},
-        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 8, 'w':  True},
-        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 8, 'w':  True},
-        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 8, 'w': False},
-        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 8, 'w': False},
-        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 8, 'w':  True},
-        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 8, 'w':  True},
-        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 8, 'w': False},
-        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 8, 'w': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 0, 'w':  True, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 0, 'w':  True, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 0, 'w': False, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 0, 'w': False, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 0, 'w':  True, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 0, 'w':  True, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 0, 'w': False, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 0, 'w': False, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 0, 'w':  True, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 0, 'w':  True, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 0, 'w': False, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 0, 'w': False, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 0, 'w':  True, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 0, 'w':  True, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 0, 'w': False, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 0, 'w': False, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 1, 'w':  True, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 1, 'w':  True, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 1, 'w': False, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 1, 'w': False, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 1, 'w':  True, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 1, 'w':  True, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 1, 'w': False, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 1, 'w': False, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 1, 'w':  True, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 1, 'w':  True, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 1, 'w': False, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 1, 'w': False, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 1, 'w':  True, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 1, 'w':  True, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 1, 'w': False, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 1, 'w': False, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 7, 'w':  True, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 7, 'w':  True, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 7, 'w': False, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 7, 'w': False, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 7, 'w':  True, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 7, 'w':  True, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 7, 'w': False, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 7, 'w': False, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 7, 'w':  True, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 7, 'w':  True, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 7, 'w': False, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 7, 'w': False, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 7, 'w':  True, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 7, 'w':  True, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 7, 'w': False, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 7, 'w': False, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 8, 'w':  True, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 8, 'w':  True, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 8, 'w': False, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 8, 'w': False, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 8, 'w':  True, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 8, 'w':  True, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 8, 'w': False, 'i': False},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 8, 'w': False, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 8, 'w':  True, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 8, 'w':  True, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 8, 'w': False, 'i': False},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 8, 'w': False, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 8, 'w':  True, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 8, 'w':  True, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 8, 'w': False, 'i': False},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 8, 'w': False, 'i': False},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 0, 'w':  True, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 0, 'w':  True, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 0, 'w': False, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 0, 'w': False, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 0, 'w':  True, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 0, 'w':  True, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 0, 'w': False, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 0, 'w': False, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 0, 'w':  True, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 0, 'w':  True, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 0, 'w': False, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 0, 'w': False, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 0, 'w':  True, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 0, 'w':  True, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 0, 'w': False, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 0, 'w': False, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 1, 'w':  True, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 1, 'w':  True, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 1, 'w': False, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 1, 'w': False, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 1, 'w':  True, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 1, 'w':  True, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 1, 'w': False, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 1, 'w': False, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 1, 'w':  True, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 1, 'w':  True, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 1, 'w': False, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 1, 'w': False, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 1, 'w':  True, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 1, 'w':  True, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 1, 'w': False, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 1, 'w': False, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 7, 'w':  True, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 7, 'w':  True, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 7, 'w': False, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 7, 'w': False, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 7, 'w':  True, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 7, 'w':  True, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 7, 'w': False, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 7, 'w': False, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 7, 'w':  True, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 7, 'w':  True, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 7, 'w': False, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 7, 'w': False, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 7, 'w':  True, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 7, 'w':  True, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 7, 'w': False, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 7, 'w': False, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 8, 'w':  True, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 8, 'w':  True, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 0, 'bo': 8, 'w': False, 'i':  True},
+        {'cls':  TestEnum2, 's':  2, 'o': 1, 'bo': 8, 'w': False, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 8, 'w':  True, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 8, 'w':  True, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 0, 'bo': 8, 'w': False, 'i':  True},
+        {'cls':  TestEnum7, 's':  7, 'o': 1, 'bo': 8, 'w': False, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 8, 'w':  True, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 8, 'w':  True, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 0, 'bo': 8, 'w': False, 'i':  True},
+        {'cls':  TestEnum8, 's':  8, 'o': 1, 'bo': 8, 'w': False, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 8, 'w':  True, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 8, 'w':  True, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 0, 'bo': 8, 'w': False, 'i':  True},
+        {'cls': TestEnum16, 's': 16, 'o': 1, 'bo': 8, 'w': False, 'i':  True},
     ])
-    def testConstructor(self, cls, s, o, bo, w):
-        param = EnumParameter('test-name', 'Test description', o, cls, bo, w)
+    def testConstructor(self, cls, s, o, bo, w, i):
+        param = EnumParameter('test-name', 'Test description', o, cls, bo, w, i)
         self.assertEqual(param.name, 'test-name')
         self.assertEqual(param.description, 'Test description')
         self.assertEqual(param.offset, o)
         self.assertEqual(param.len, (s + bo + 7) // 8)
         self.assertEqual(param.range, Range(o, (s + bo + 7) // 8))
         self.assertEqual(param.writable, w)
+        self.assertEqual(param.immutable, i)
         self.assertIsNone(param.value)
         self.assertEqual(str(param), '')
         self.assertEqual(bytes(param), bytes([0x00]*((s + bo + 7) // 8)))
@@ -627,7 +721,7 @@ class TestEnumParameter(unittest.TestCase):
         {'cls': TestEnum16, 'bo': 8, 'data': bytes([0xFF, 0xFF, 0x00]), 'expectedValue': TestEnum16.MAX , 'expectedStr':  'MAX', 'expectedBytes': bytes([0xFF, 0xFF, 0x00])},
     ])
     def testParseData(self, cls, bo, data, expectedValue, expectedStr, expectedBytes):
-        param = EnumParameter('test-name', 'Test description', 0, cls, bo, True)
+        param = EnumParameter('test-name', 'Test description', 0, cls, bo, True, False)
         param.parseData(data)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedStr)
@@ -652,7 +746,7 @@ class TestEnumParameter(unittest.TestCase):
         {'cls': TestEnum16, 'bo': 8, 'data': bytes([0x00, 0x03, 0x00]), 'valueStr': '0x0003', 'expectedBytes': bytes([0x00, 0x03, 0x00])},
     ])
     def testParseDataInvalid(self, cls, bo, data, valueStr, expectedBytes):
-        param = EnumParameter('test-name', 'Test description', 0, cls, bo, True)
+        param = EnumParameter('test-name', 'Test description', 0, cls, bo, True, False)
         param.parseData(data)
 
         with self.assertWarns(UserWarning) as w:
@@ -732,7 +826,7 @@ class TestEnumParameter(unittest.TestCase):
         {'cls': TestEnum16, 'bo': 8, 'value':  'MAX', 'expectedValue': TestEnum16.MAX , 'expectedBytes': bytes([0xFF, 0xFF, 0x00])},
     ])
     def testParseValue(self, cls, bo, value, expectedValue, expectedBytes):
-        param = EnumParameter('test-name', 'Test description', 0, cls, bo, True)
+        param = EnumParameter('test-name', 'Test description', 0, cls, bo, True, False)
         param.parseValue(value)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), value)
@@ -760,7 +854,7 @@ class TestEnumParameter(unittest.TestCase):
         {'cls': TestEnum16, 'bo': 8, 's': 3, 'value': 'THREE'},
     ])
     def testParseValueInvalid(self, cls, bo, s, value):
-        param = EnumParameter('test-name', 'Test description', 0, cls, bo, True)
+        param = EnumParameter('test-name', 'Test description', 0, cls, bo, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Invalid value: {value} (accepted values: \"ZERO\", \"ONE\", \"TWO\", \"MAX\")")
@@ -941,30 +1035,39 @@ class TestEnumParameter(unittest.TestCase):
         {'cls': TestEnum16, 'bo': 8, 'value': TestEnum16.MAX , 'oldData': bytes([0xFF, 0xFF, 0xFF]), 'expectedBytes': bytes([0xFF, 0xFF, 0xFF])},
     ])
     def testOldData(self, cls, bo, value, oldData, expectedBytes):
-        param = EnumParameter('test-name', 'Test description', 0, cls, bo, True)
+        param = EnumParameter('test-name', 'Test description', 0, cls, bo, True, False)
         param.value = value
         self.assertEqual(bytes(param | oldData), expectedBytes)
 
 
 class TestHalfByteParameter(unittest.TestCase):
     @testdata.TestData([
-        {'o': 0, 'pos': HalfByteParameter.Position.Lower, 'w':  True},
-        {'o': 1, 'pos': HalfByteParameter.Position.Lower, 'w':  True},
-        {'o': 0, 'pos': HalfByteParameter.Position.Lower, 'w':  True},
-        {'o': 1, 'pos': HalfByteParameter.Position.Lower, 'w':  True},
-        {'o': 0, 'pos': HalfByteParameter.Position.Upper, 'w': False},
-        {'o': 1, 'pos': HalfByteParameter.Position.Upper, 'w': False},
-        {'o': 0, 'pos': HalfByteParameter.Position.Upper, 'w': False},
-        {'o': 1, 'pos': HalfByteParameter.Position.Upper, 'w': False},
+        {'o': 0, 'pos': HalfByteParameter.Position.Lower, 'w':  True, 'i': False},
+        {'o': 1, 'pos': HalfByteParameter.Position.Lower, 'w':  True, 'i': False},
+        {'o': 0, 'pos': HalfByteParameter.Position.Lower, 'w':  True, 'i': False},
+        {'o': 1, 'pos': HalfByteParameter.Position.Lower, 'w':  True, 'i': False},
+        {'o': 0, 'pos': HalfByteParameter.Position.Upper, 'w': False, 'i': False},
+        {'o': 1, 'pos': HalfByteParameter.Position.Upper, 'w': False, 'i': False},
+        {'o': 0, 'pos': HalfByteParameter.Position.Upper, 'w': False, 'i': False},
+        {'o': 1, 'pos': HalfByteParameter.Position.Upper, 'w': False, 'i': False},
+        {'o': 0, 'pos': HalfByteParameter.Position.Lower, 'w':  True, 'i':  True},
+        {'o': 1, 'pos': HalfByteParameter.Position.Lower, 'w':  True, 'i':  True},
+        {'o': 0, 'pos': HalfByteParameter.Position.Lower, 'w':  True, 'i':  True},
+        {'o': 1, 'pos': HalfByteParameter.Position.Lower, 'w':  True, 'i':  True},
+        {'o': 0, 'pos': HalfByteParameter.Position.Upper, 'w': False, 'i':  True},
+        {'o': 1, 'pos': HalfByteParameter.Position.Upper, 'w': False, 'i':  True},
+        {'o': 0, 'pos': HalfByteParameter.Position.Upper, 'w': False, 'i':  True},
+        {'o': 1, 'pos': HalfByteParameter.Position.Upper, 'w': False, 'i':  True},
     ])
-    def testConstructor(self, o, pos, w):
-        param = HalfByteParameter('test-name', 'Test description', o, pos, w)
+    def testConstructor(self, o, pos, w, i):
+        param = HalfByteParameter('test-name', 'Test description', o, pos, w, i)
         self.assertEqual(param.name, 'test-name')
         self.assertEqual(param.description, 'Test description')
         self.assertEqual(param.offset, o)
         self.assertEqual(param.len, 1)
         self.assertEqual(param.range, Range(o, 1))
         self.assertEqual(param.writable, w)
+        self.assertEqual(param.immutable, i)
         self.assertIsNone(param.value)
         self.assertEqual(str(param), '')
         self.assertEqual(bytes(param), bytes([0x00]))
@@ -988,7 +1091,7 @@ class TestHalfByteParameter(unittest.TestCase):
         {'pos': HalfByteParameter.Position.Upper, 'data': bytes([0xF0]), 'expectedValue': 0x0F, 'expectedStr': '0x0F', 'expectedBytes': bytes([0xF0])},
     ])
     def testParseData(self, pos, data, expectedValue, expectedStr, expectedBytes):
-        param = HalfByteParameter('test-name', 'Test description', 0, pos, True)
+        param = HalfByteParameter('test-name', 'Test description', 0, pos, True, False)
         param.parseData(data)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedStr)
@@ -1013,7 +1116,7 @@ class TestHalfByteParameter(unittest.TestCase):
         {'pos': HalfByteParameter.Position.Upper, 'value': '0x0F', 'expectedValue': 0x0F, 'expectedBytes': bytes([0xF0])},
     ])
     def testParseValue(self, pos, value, expectedValue, expectedBytes):
-        param = HalfByteParameter('test-name', 'Test description', 0, pos, True)
+        param = HalfByteParameter('test-name', 'Test description', 0, pos, True, False)
         param.parseValue(value)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), value)
@@ -1032,7 +1135,7 @@ class TestHalfByteParameter(unittest.TestCase):
         {'pos': HalfByteParameter.Position.Upper, 'value': 'ABCDEF'},
     ])
     def testParseValueInvalid(self, pos, value):
-        param = HalfByteParameter('test-name', 'Test description', 0, pos, True)
+        param = HalfByteParameter('test-name', 'Test description', 0, pos, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Invalid value for unsigned integer: {value}")
@@ -1052,7 +1155,7 @@ class TestHalfByteParameter(unittest.TestCase):
         {'pos': HalfByteParameter.Position.Upper, 'value':      '16'},
     ])
     def testParseValueTooLarge(self, pos, value):
-        param = HalfByteParameter('test-name', 'Test description', 0, pos, True)
+        param = HalfByteParameter('test-name', 'Test description', 0, pos, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Value is too large: {value}")
@@ -1096,30 +1199,39 @@ class TestHalfByteParameter(unittest.TestCase):
         {'pos': HalfByteParameter.Position.Upper, 'value': 0x0F, 'oldData': bytes([0xFF]), 'expectedBytes': bytes([0xFF])},
     ])
     def testOldData(self, pos, value, oldData, expectedBytes):
-        param = HalfByteParameter('test-name', 'Test description', 0, pos, True)
+        param = HalfByteParameter('test-name', 'Test description', 0, pos, True, False)
         param.value = value
         self.assertEqual(bytes(param | oldData), expectedBytes)
 
 
 class TestBitParameter(unittest.TestCase):
     @testdata.TestData([
-        {'o': 0, 'bo': 0, 'w':  True},
-        {'o': 1, 'bo': 0, 'w':  True},
-        {'o': 0, 'bo': 7, 'w':  True},
-        {'o': 1, 'bo': 7, 'w':  True},
-        {'o': 0, 'bo': 0, 'w': False},
-        {'o': 1, 'bo': 0, 'w': False},
-        {'o': 0, 'bo': 7, 'w': False},
-        {'o': 1, 'bo': 7, 'w': False},
+        {'o': 0, 'bo': 0, 'w':  True, 'i': False},
+        {'o': 1, 'bo': 0, 'w':  True, 'i': False},
+        {'o': 0, 'bo': 7, 'w':  True, 'i': False},
+        {'o': 1, 'bo': 7, 'w':  True, 'i': False},
+        {'o': 0, 'bo': 0, 'w': False, 'i': False},
+        {'o': 1, 'bo': 0, 'w': False, 'i': False},
+        {'o': 0, 'bo': 7, 'w': False, 'i': False},
+        {'o': 1, 'bo': 7, 'w': False, 'i': False},
+        {'o': 0, 'bo': 0, 'w':  True, 'i':  True},
+        {'o': 1, 'bo': 0, 'w':  True, 'i':  True},
+        {'o': 0, 'bo': 7, 'w':  True, 'i':  True},
+        {'o': 1, 'bo': 7, 'w':  True, 'i':  True},
+        {'o': 0, 'bo': 0, 'w': False, 'i':  True},
+        {'o': 1, 'bo': 0, 'w': False, 'i':  True},
+        {'o': 0, 'bo': 7, 'w': False, 'i':  True},
+        {'o': 1, 'bo': 7, 'w': False, 'i':  True},
     ])
-    def testConstructor(self, o, bo, w):
-        param = BitParameter('test-name', 'Test description', o, bo, w)
+    def testConstructor(self, o, bo, w, i):
+        param = BitParameter('test-name', 'Test description', o, bo, w, i)
         self.assertEqual(param.name, 'test-name')
         self.assertEqual(param.description, 'Test description')
         self.assertEqual(param.offset, o)
         self.assertEqual(param.len, 1)
         self.assertEqual(param.range, Range(o, 1))
         self.assertEqual(param.writable, w)
+        self.assertEqual(param.immutable, i)
         self.assertIsNone(param.value)
         self.assertEqual(str(param), '')
         self.assertEqual(bytes(param), bytes([0x00]))
@@ -1143,7 +1255,7 @@ class TestBitParameter(unittest.TestCase):
         {'bo': 7, 'data': bytes([0x80]), 'expectedValue':  True, 'expectedBytes': bytes([0x80])},
     ])
     def testParseData(self, bo, data, expectedValue, expectedBytes):
-        param = BitParameter('test-name', 'Test description', 0, bo, True)
+        param = BitParameter('test-name', 'Test description', 0, bo, True, False)
         param.parseData(data)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), str(expectedValue))
@@ -1169,7 +1281,7 @@ class TestBitParameter(unittest.TestCase):
         {'bo': 7, 'value':  'True', 'expectedValue':  True, 'expectedBytes': bytes([0x80])},
     ])
     def testParseValue(self, bo, value, expectedValue, expectedBytes):
-        param = BitParameter('test-name', 'Test description', 0, bo, True)
+        param = BitParameter('test-name', 'Test description', 0, bo, True, False)
         param.parseValue(value)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), value)
@@ -1180,7 +1292,7 @@ class TestBitParameter(unittest.TestCase):
         {'value':    '2'},
     ])
     def testParseValueInvalid(self, value):
-        param = BitParameter('test-name', 'Test description', 0, 0, True)
+        param = BitParameter('test-name', 'Test description', 0, 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Invalid bit value: {value}")
@@ -1223,7 +1335,7 @@ class TestBitParameter(unittest.TestCase):
         {'bo': 7, 'value':  True, 'oldData': bytes([0xFF]), 'expectedBytes': bytes([0xFF])},
     ])
     def testOldData(self, bo, value, oldData, expectedBytes):
-        param = BitParameter('test-name', 'Test description', 0, bo, True)
+        param = BitParameter('test-name', 'Test description', 0, bo, True, False)
         param.value = value
         self.assertEqual(bytes(param | oldData), expectedBytes)
 
@@ -1233,23 +1345,32 @@ class TestEnum1(Enum):
 
 class TestEnumBitParameter(unittest.TestCase):
     @testdata.TestData([
-        {'o': 0, 'bo': 0, 'w':  True},
-        {'o': 1, 'bo': 0, 'w':  True},
-        {'o': 0, 'bo': 7, 'w':  True},
-        {'o': 1, 'bo': 7, 'w':  True},
-        {'o': 0, 'bo': 0, 'w': False},
-        {'o': 1, 'bo': 0, 'w': False},
-        {'o': 0, 'bo': 7, 'w': False},
-        {'o': 1, 'bo': 7, 'w': False},
+        {'o': 0, 'bo': 0, 'w':  True, 'i': False},
+        {'o': 1, 'bo': 0, 'w':  True, 'i': False},
+        {'o': 0, 'bo': 7, 'w':  True, 'i': False},
+        {'o': 1, 'bo': 7, 'w':  True, 'i': False},
+        {'o': 0, 'bo': 0, 'w': False, 'i': False},
+        {'o': 1, 'bo': 0, 'w': False, 'i': False},
+        {'o': 0, 'bo': 7, 'w': False, 'i': False},
+        {'o': 1, 'bo': 7, 'w': False, 'i': False},
+        {'o': 0, 'bo': 0, 'w':  True, 'i':  True},
+        {'o': 1, 'bo': 0, 'w':  True, 'i':  True},
+        {'o': 0, 'bo': 7, 'w':  True, 'i':  True},
+        {'o': 1, 'bo': 7, 'w':  True, 'i':  True},
+        {'o': 0, 'bo': 0, 'w': False, 'i':  True},
+        {'o': 1, 'bo': 0, 'w': False, 'i':  True},
+        {'o': 0, 'bo': 7, 'w': False, 'i':  True},
+        {'o': 1, 'bo': 7, 'w': False, 'i':  True},
     ])
-    def testConstructor(self, o, bo, w):
-        param = EnumBitParameter('test-name', 'Test description', o, bo, TestEnum1, w)
+    def testConstructor(self, o, bo, w, i):
+        param = EnumBitParameter('test-name', 'Test description', o, bo, TestEnum1, w, i)
         self.assertEqual(param.name, 'test-name')
         self.assertEqual(param.description, 'Test description')
         self.assertEqual(param.offset, o)
         self.assertEqual(param.len, 1)
         self.assertEqual(param.range, Range(o, 1))
         self.assertEqual(param.writable, w)
+        self.assertEqual(param.immutable, i)
         self.assertIsNone(param.value)
         self.assertEqual(str(param), '')
         self.assertEqual(bytes(param), bytes([0x00]))
@@ -1273,7 +1394,7 @@ class TestEnumBitParameter(unittest.TestCase):
         {'bo': 7, 'data': bytes([0x80]), 'expectedValue': TestEnum1.OK, 'expectedStr': 'OK', 'expectedBytes': bytes([0x80])},
     ])
     def testParseData(self, bo, data, expectedValue, expectedStr, expectedBytes):
-        param = EnumBitParameter('test-name', 'Test description', 0, bo, TestEnum1, True)
+        param = EnumBitParameter('test-name', 'Test description', 0, bo, TestEnum1, True, False)
         param.parseData(data)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedStr)
@@ -1298,7 +1419,7 @@ class TestEnumBitParameter(unittest.TestCase):
         {'bo': 7, 'value': 'OK', 'expectedValue': TestEnum1.OK, 'expectedBytes': bytes([0x80])},
     ])
     def testParseValue(self, bo, value, expectedValue, expectedBytes):
-        param = EnumBitParameter('test-name', 'Test description', 0, bo, TestEnum1, True)
+        param = EnumBitParameter('test-name', 'Test description', 0, bo, TestEnum1, True, False)
         param.parseValue(value)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), value)
@@ -1311,7 +1432,7 @@ class TestEnumBitParameter(unittest.TestCase):
         {'value':     '2'},
     ])
     def testParseValueInvalid(self, value):
-        param = EnumBitParameter('test-name', 'Test description', 0, 0, TestEnum1, True)
+        param = EnumBitParameter('test-name', 'Test description', 0, 0, TestEnum1, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Invalid value: {value} (accepted values: \"KO\", \"OK\")")
@@ -1370,26 +1491,31 @@ class TestEnumBitParameter(unittest.TestCase):
         {'bo': 7, 'value': TestEnum1.OK, 'oldData': bytes([0xFF]), 'expectedBytes': bytes([0xFF])},
     ])
     def testOldData(self, bo, value, oldData, expectedBytes):
-        param = EnumBitParameter('test-name', 'Test description', 0, bo, TestEnum1, True)
+        param = EnumBitParameter('test-name', 'Test description', 0, bo, TestEnum1, True, False)
         param.value = value
         self.assertEqual(bytes(param | oldData), expectedBytes)
 
 
 class TestFloatParameter(unittest.TestCase):
     @testdata.TestData([
-        {'o': 0, 'w':  True},
-        {'o': 1, 'w':  True},
-        {'o': 0, 'w': False},
-        {'o': 1, 'w': False},
+        {'o': 0, 'w':  True, 'i': False},
+        {'o': 1, 'w':  True, 'i': False},
+        {'o': 0, 'w': False, 'i': False},
+        {'o': 1, 'w': False, 'i': False},
+        {'o': 0, 'w':  True, 'i':  True},
+        {'o': 1, 'w':  True, 'i':  True},
+        {'o': 0, 'w': False, 'i':  True},
+        {'o': 1, 'w': False, 'i':  True},
     ])
-    def testConstructor(self, o, w):
-        param = FloatParameter('test-name', 'Test description', o, w)
+    def testConstructor(self, o, w, i):
+        param = FloatParameter('test-name', 'Test description', o, w, i)
         self.assertEqual(param.name, 'test-name')
         self.assertEqual(param.description, 'Test description')
         self.assertEqual(param.offset, o)
         self.assertEqual(param.len, 2)
         self.assertEqual(param.range, Range(o, 2))
         self.assertEqual(param.writable, w)
+        self.assertEqual(param.immutable, i)
         self.assertIsNone(param.value)
         self.assertEqual(str(param), '')
         self.assertEqual(bytes(param), bytes([0x00, 0x00]))
@@ -1404,7 +1530,7 @@ class TestFloatParameter(unittest.TestCase):
         {'data': bytes([0xFF, 0xFF]), 'expectedValue': float('nan'), 'expectedStr':     'nan'},
     ])
     def testParseData(self, data, expectedValue, expectedStr):
-        param = FloatParameter('test-name', 'Test description', 0, True)
+        param = FloatParameter('test-name', 'Test description', 0, True, False)
         param.parseData(data)
         if math.isnan(expectedValue):
             self.assertTrue(math.isnan(param.value))
@@ -1431,7 +1557,7 @@ class TestFloatParameter(unittest.TestCase):
         {'value':     '-inf', 'expectedValue': float('nan'), 'expectedStr':     'nan', 'expectedBytes': bytes([0xFF, 0xFF])},
     ])
     def testParseValue(self, value, expectedValue, expectedStr, expectedBytes):
-        param = FloatParameter('test-name', 'Test description', 0, True)
+        param = FloatParameter('test-name', 'Test description', 0, True, False)
         param.parseValue(value)
         if math.isnan(expectedValue):
             self.assertTrue(math.isnan(param.value))
@@ -1450,7 +1576,7 @@ class TestFloatParameter(unittest.TestCase):
         {'value': 'qnan'},
     ])
     def testParseValueInvalid(self, value):
-        param = FloatParameter('test-name', 'Test description', 0, True)
+        param = FloatParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Invalid value for floating-point number: {value}")
@@ -1464,7 +1590,7 @@ class TestFloatParameter(unittest.TestCase):
         {'value':  '3276.76'},
     ])
     def testParseValueTooLarge(self, value):
-        param = FloatParameter('test-name', 'Test description', 0, True)
+        param = FloatParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Value is too large: {value}")
@@ -1478,7 +1604,7 @@ class TestFloatParameter(unittest.TestCase):
         {'value': '-3276.66'},
     ])
     def testParseValueTooSmall(self, value):
-        param = FloatParameter('test-name', 'Test description', 0, True)
+        param = FloatParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Value is too small: {value}")
@@ -1490,19 +1616,24 @@ class TestFloatParameter(unittest.TestCase):
 
 class TestTimeSpanParameter(unittest.TestCase):
     @testdata.TestData([
-        {'o': 0, 'w':  True},
-        {'o': 1, 'w':  True},
-        {'o': 0, 'w': False},
-        {'o': 1, 'w': False},
+        {'o': 0, 'w':  True, 'i': False},
+        {'o': 1, 'w':  True, 'i': False},
+        {'o': 0, 'w': False, 'i': False},
+        {'o': 1, 'w': False, 'i': False},
+        {'o': 0, 'w':  True, 'i':  True},
+        {'o': 1, 'w':  True, 'i':  True},
+        {'o': 0, 'w': False, 'i':  True},
+        {'o': 1, 'w': False, 'i':  True},
     ])
-    def testConstructor(self, o, w):
-        param = TimeSpanParameter('test-name', 'Test description', o, w)
+    def testConstructor(self, o, w, i):
+        param = TimeSpanParameter('test-name', 'Test description', o, w, i)
         self.assertEqual(param.name, 'test-name')
         self.assertEqual(param.description, 'Test description')
         self.assertEqual(param.offset, o)
         self.assertEqual(param.len, 2)
         self.assertEqual(param.range, Range(o, 2))
         self.assertEqual(param.writable, w)
+        self.assertEqual(param.immutable, i)
         self.assertIsNone(param.value)
         self.assertEqual(str(param), '')
         self.assertEqual(bytes(param), bytes([0x00, 0x00]))
@@ -1522,7 +1653,7 @@ class TestTimeSpanParameter(unittest.TestCase):
         {'data': bytes([0xFF, 0xFF]), 'expectedValue': 655350, 'expectedStr': '7j14h2m30s'},
     ])
     def testParseData(self, data, expectedValue, expectedStr):
-        param = TimeSpanParameter('test-name', 'Test description', 0, True)
+        param = TimeSpanParameter('test-name', 'Test description', 0, True, False)
         param.parseData(data)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedStr)
@@ -1547,7 +1678,7 @@ class TestTimeSpanParameter(unittest.TestCase):
         {'value': '7j14h2m30s', 'expectedValue': 655350, 'expectedBytes': bytes([0xFF, 0xFF])},
     ])
     def testParseValue(self, value, expectedValue, expectedBytes):
-        param = TimeSpanParameter('test-name', 'Test description', 0, True)
+        param = TimeSpanParameter('test-name', 'Test description', 0, True, False)
         param.parseValue(value)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), value)
@@ -1592,7 +1723,7 @@ class TestTimeSpanParameter(unittest.TestCase):
         {'value':       '10s10m'},
     ])
     def testParseValueInvalid(self, value):
-        param = TimeSpanParameter('test-name', 'Test description', 0, True)
+        param = TimeSpanParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Invalid timespan: {value}")
@@ -1619,7 +1750,7 @@ class TestTimeSpanParameter(unittest.TestCase):
         {'value': '1j1h10m59s', 'expectedValue': 90650, 'expectedStr': '1j1h10m50s', 'expectedBytes': bytes([0x23, 0x69])},
     ])
     def testParseValueTooAccurate(self, value, expectedValue, expectedStr, expectedBytes):
-        param = TimeSpanParameter('test-name', 'Test description', 0, True)
+        param = TimeSpanParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), "Time span precision is 10s. Ignoring extra precision.")
@@ -1630,19 +1761,24 @@ class TestTimeSpanParameter(unittest.TestCase):
 
 class TestTimeZoneParameter(unittest.TestCase):
     @testdata.TestData([
-        {'o': 0, 'w':  True},
-        {'o': 1, 'w':  True},
-        {'o': 0, 'w': False},
-        {'o': 1, 'w': False},
+        {'o': 0, 'w':  True, 'i': False},
+        {'o': 1, 'w':  True, 'i': False},
+        {'o': 0, 'w': False, 'i': False},
+        {'o': 1, 'w': False, 'i': False},
+        {'o': 0, 'w':  True, 'i':  True},
+        {'o': 1, 'w':  True, 'i':  True},
+        {'o': 0, 'w': False, 'i':  True},
+        {'o': 1, 'w': False, 'i':  True},
     ])
-    def testConstructor(self, o, w):
-        param = TimeZoneParameter('test-name', 'Test description', o, w)
+    def testConstructor(self, o, w, i):
+        param = TimeZoneParameter('test-name', 'Test description', o, w, i)
         self.assertEqual(param.name, 'test-name')
         self.assertEqual(param.description, 'Test description')
         self.assertEqual(param.offset, o)
         self.assertEqual(param.len, 12)
         self.assertEqual(param.range, Range(o, 12))
         self.assertEqual(param.writable, w)
+        self.assertEqual(param.immutable, i)
         self.assertIsNone(param.value)
         self.assertEqual(str(param), '')
         self.assertEqual(bytes(param), bytes([0x00]*12))
@@ -1663,7 +1799,7 @@ class TestTimeZoneParameter(unittest.TestCase):
         {'data': bytes([0xED] + [0xFF]*10 + [0x1E]), 'expectedValue': '-1130'},
     ])
     def testParseData(self, data, expectedValue):
-        param = TimeZoneParameter('test-name', 'Test description', 0, True)
+        param = TimeZoneParameter('test-name', 'Test description', 0, True, False)
         param.parseData(data)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedValue)
@@ -1679,7 +1815,7 @@ class TestTimeZoneParameter(unittest.TestCase):
         {'data': bytes([0xF8] + [0xFF]*10 + [0x3C]), 'h': 24, 'm': 60},
     ])
     def testParseDataInvalid(self, data, h, m):
-        param = TimeZoneParameter('test-name', 'Test description', 0, True)
+        param = TimeZoneParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseData(data)
         self.assertEqual(str(w.warning), f"Invalid timezone data: h={h}, m={m}")
@@ -1705,7 +1841,7 @@ class TestTimeZoneParameter(unittest.TestCase):
         {'value': '-1130', 'expectedValue': '-1130', 'expectedBytes': bytes([0xED] + [0xFF]*10 + [0x1E])},
     ])
     def testParseValue(self, value, expectedValue, expectedBytes):
-        param = TimeZoneParameter('test-name', 'Test description', 0, True)
+        param = TimeZoneParameter('test-name', 'Test description', 0, True, False)
         param.parseValue(value)
         self.assertEqual(param.value, expectedValue)
         self.assertEqual(str(param), expectedValue)
@@ -1728,7 +1864,7 @@ class TestTimeZoneParameter(unittest.TestCase):
         {'value':    'UTC'},
     ])
     def testParseValueInvalid(self, value):
-        param = TimeZoneParameter('test-name', 'Test description', 0, True)
+        param = TimeZoneParameter('test-name', 'Test description', 0, True, False)
         with self.assertWarns(UserWarning) as w:
             param.parseValue(value)
         self.assertEqual(str(w.warning), f"Invalid timezone: {value}")

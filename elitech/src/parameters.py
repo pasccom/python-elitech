@@ -108,11 +108,12 @@ class Range:
 
 
 class Parameter:
-    def __init__(self, name, description, offset, writable):
+    def __init__(self, name, description, offset, writable, immutable):
         self.name = name
         self.description = description
         self.offset = offset
         self.writable = writable
+        self.immutable = immutable
         self._value = None
         self._oldData = None
 
@@ -160,8 +161,8 @@ class Parameter:
 
 
 class StringParameter(Parameter):
-    def __init__(self, name, description, offset, length, writable):
-        super().__init__(name, description, offset, writable)
+    def __init__(self, name, description, offset, length, writable, immutable):
+        super().__init__(name, description, offset, writable, immutable)
         self._len = length
 
     def parseData(self, data):
@@ -267,8 +268,8 @@ class DWordParameter(UnsignedIntegerParameter):
 
 
 class EnumParameter(Parameter):
-    def __init__(self, name, description, offset, enumCls, bitOffset, writable):
-        super().__init__(name, description, offset, writable)
+    def __init__(self, name, description, offset, enumCls, bitOffset, writable, immutable):
+        super().__init__(name, description, offset, writable, immutable)
         self.__cls = enumCls
         self._len = math.ceil(math.log2(1 + max([i.value for i in self.__cls])))
         self.__bitOffset = bitOffset
@@ -352,8 +353,8 @@ class HalfByteParameter(Parameter):
             self.mask = m
             self.offset = o
 
-    def __init__(self, name, description, offset, position, writable):
-        super().__init__(name, description, offset, writable)
+    def __init__(self, name, description, offset, position, writable, immutable):
+        super().__init__(name, description, offset, writable, immutable)
         self.__pos = position
         self._len = 1
 
@@ -391,8 +392,8 @@ class HalfByteParameter(Parameter):
 
 
 class BitParameter(Parameter):
-    def __init__(self, name, description, offset, bitOffset, writable):
-        super().__init__(name, description, offset, writable)
+    def __init__(self, name, description, offset, bitOffset, writable, immutable):
+        super().__init__(name, description, offset, writable, immutable)
         self.__offset = bitOffset
         self._len = 1
 
@@ -420,8 +421,8 @@ class BitParameter(Parameter):
 
 
 class EnumBitParameter(BitParameter):
-    def __init__(self, name, description, offset, bitOffset, cls, writable):
-        super().__init__(name, description, offset, bitOffset, writable)
+    def __init__(self, name, description, offset, bitOffset, cls, writable, immutable):
+        super().__init__(name, description, offset, bitOffset, writable, immutable)
         self.__cls = cls
 
     @property
@@ -569,8 +570,8 @@ class TimeSpanParameter(WordParameter):
 
 
 class TimeZoneParameter(Parameter):
-    def __init__(self, name, description, offset, writable):
-        super().__init__(name, description, offset, writable)
+    def __init__(self, name, description, offset, writable, immutable):
+        super().__init__(name, description, offset, writable, immutable)
         self._len = 12
 
     @property
@@ -684,66 +685,66 @@ class StopModes(Enum):
     MAX = 0b111
 
 parameters = [
-    WordParameter(    'model',                        "Product id of the device from its memory",                                 0x00,                                   False),
-    StringParameter(  'serial-number',                "Serial number of the device",                                              0x02, 12,                               False),
+    WordParameter(    'model',                        "Product id of the device from its memory",                                 0x00,                                   False, False),
+    StringParameter(  'serial-number',                "Serial number of the device",                                              0x02, 12,                               False, False),
     # Bytes 0x0E and 0x0F are ignored [0x00, 0x00]                                                                                                                             ),
-    StringParameter(  'travel-number',                "Travel number",                                                            0x10, 13,                                True),
-    EnumParameter(    'pdf-language',                 "Language to be used in the PDF",                                           0x1D, PdfLanguages, 0,                   True),
-    HalfByteParameter('product-properties',           "Properties of the product",                                                0x1E, HalfByteParameter.Position.Lower, False),
-    BitParameter(     'light-on',                     "Control device light (if available)",                                      0x1E, 4,                                 True),
-    BitParameter(     'allow-cycle',                  "Allow to overwrite old data when the memory is full",                      0x1E, 7,                                 True), # NOTE Does not work on RC-5+
-    ByteParameter(    'firmware-version',             "Version number of the firmware",                                           0x1F,                                   False),
-    EnumParameter(    'start-mode',                   "Recording start mode",                                                     0x20, StartModes, 0,                     True),
-    BitParameter(     'button-stop',                  "The device can be stopped by button",                                      0x20, 3,                                 True), # TODO test
-    BitParameter(     'software-stop',                "The device can be stopped by software",                                    0x20, 4,                                 True), # TODO test
+    StringParameter(  'travel-number',                "Travel number",                                                            0x10, 13,                                True, False),
+    EnumParameter(    'pdf-language',                 "Language to be used in the PDF",                                           0x1D, PdfLanguages, 0,                   True, False),
+    HalfByteParameter('product-properties',           "Properties of the product",                                                0x1E, HalfByteParameter.Position.Lower, False, False),
+    BitParameter(     'light-on',                     "Control device light (if available)",                                      0x1E, 4,                                 True, False),
+    BitParameter(     'allow-cycle',                  "Allow to overwrite old data when the memory is full",                      0x1E, 7,                                 True, False), # NOTE Does not work on RC-5+
+    ByteParameter(    'firmware-version',             "Version number of the firmware",                                           0x1F,                                   False,  True),
+    EnumParameter(    'start-mode',                   "Recording start mode",                                                     0x20, StartModes, 0,                     True, False),
+    BitParameter(     'button-stop',                  "The device can be stopped by button",                                      0x20, 3,                                 True, False), # TODO test
+    BitParameter(     'software-stop',                "The device can be stopped by software",                                    0x20, 4,                                 True, False), # TODO test
     # Bit 5 of byte 0x20 is ignored [0]                                                                                                                                        ),
-    BitParameter(     'repeat',                       "Allow a new recording to be started without having read the previous one", 0x20, 6,                                 True),
-    BitParameter(     'pause-allowed',                "Authorize the recording to be paused (by double clicking the left key)",   0x20, 7,                                 True),
-    BitParameter(     'pdf-password-protected',       "Protect PDF file with a password",                                         0x21, 0,                                 True),
-    EnumBitParameter( 'temperature-sensor-location',  "Temperature sensor to be used",                                            0x21, 1, SensorLocations,                True),
-    EnumBitParameter( 'humidity-sensor-location',     "Humidity sensor to be used",                                               0x21, 2, SensorLocations,                True),
-    EnumBitParameter( 'temperature-sensor-unit',      "Unit for the temperature record",                                          0x21, 3, TemperatureUnits,               True),
-    BitParameter(     'temperature-alarm-mode',       "Operation mode of temperature alarm",                                      0x21, 4,                                 True), # TODO two bits
-    BitParameter(     'humidity-alarm-mode',          "Operation mode of humidity alarm",                                         0x21, 6,                                 True), # TODO two bits
+    BitParameter(     'repeat',                       "Allow a new recording to be started without having read the previous one", 0x20, 6,                                 True, False),
+    BitParameter(     'pause-allowed',                "Authorize the recording to be paused (by double clicking the left key)",   0x20, 7,                                 True, False),
+    BitParameter(     'pdf-password-protected',       "Protect PDF file with a password",                                         0x21, 0,                                 True, False),
+    EnumBitParameter( 'temperature-sensor-location',  "Temperature sensor to be used",                                            0x21, 1, SensorLocations,                True, False),
+    EnumBitParameter( 'humidity-sensor-location',     "Humidity sensor to be used",                                               0x21, 2, SensorLocations,                True, False),
+    EnumBitParameter( 'temperature-sensor-unit',      "Unit for the temperature record",                                          0x21, 3, TemperatureUnits,               True, False),
+    BitParameter(     'temperature-alarm-mode',       "Operation mode of temperature alarm",                                      0x21, 4,                                 True, False), # TODO two bits
+    BitParameter(     'humidity-alarm-mode',          "Operation mode of humidity alarm",                                         0x21, 6,                                 True, False), # TODO two bits
     # Bit 6 and 7 of byte 0x21 are ignored [0, 0]                                                                                                                              ),
-    BitParameter(     'high-temperature-alarm3-type', "TODO",                                                                     0x22, 0,                                 True), # TODO test
-    BitParameter(     'high-temperature-alarm2-type', "TODO",                                                                     0x22, 1,                                 True), # TODO test
-    BitParameter(     'high-temperature-alarm1-type', "TODO",                                                                     0x22, 2,                                 True), # TODO test
-    BitParameter(     'low-temperature-alarm1-type',  "TODO",                                                                     0x22, 3,                                 True), # TODO test
-    BitParameter(     'low-temperature-alarm2-type',  "TODO",                                                                     0x22, 4,                                 True), # TODO test
-    BitParameter(     'low-temperature-alarm3-type',  "TODO",                                                                     0x22, 5,                                 True), # TODO test
-    BitParameter(     'high-humidity-alarm-type',     "TODO",                                                                     0x22, 6,                                 True), # TODO test
-    BitParameter(     'low-humidity-alarm-type',      "TODO",                                                                     0x22, 7,                                 True), # TODO test
-    EnumParameter(    'exact-sensor-type',            "Additional information on the temperature sensor type",                    0x23, SensorTypes, 0,                    True),
+    BitParameter(     'high-temperature-alarm3-type', "TODO",                                                                     0x22, 0,                                 True, False), # TODO test
+    BitParameter(     'high-temperature-alarm1-type', "TODO",                                                                     0x22, 2,                                 True, False), # TODO test
+    BitParameter(     'low-temperature-alarm1-type',  "TODO",                                                                     0x22, 3,                                 True, False), # TODO test
+    BitParameter(     'high-temperature-alarm2-type', "TODO",                                                                     0x22, 1,                                 True, False), # TODO test
+    BitParameter(     'low-temperature-alarm2-type',  "TODO",                                                                     0x22, 4,                                 True, False), # TODO test
+    BitParameter(     'low-temperature-alarm3-type',  "TODO",                                                                     0x22, 5,                                 True, False), # TODO test
+    BitParameter(     'high-humidity-alarm-type',     "TODO",                                                                     0x22, 6,                                 True, False), # TODO test
+    BitParameter(     'low-humidity-alarm-type',      "TODO",                                                                     0x22, 7,                                 True, False), # TODO test
+    EnumParameter(    'exact-sensor-type',            "Additional information on the temperature sensor type",                    0x23, SensorTypes, 0,                    True, False),
     # Bit 2 and 3 of byte 0x23 are ignored [0, 0]                                                                                                                              ),
-    HalfByteParameter('light-intensity',              "Intensity of the light of the device",                                     0x23, HalfByteParameter.Position.Upper,  True),
-    TimeZoneParameter('timezone',                     "Timezone for the time parameters",                                         0x24,                                    True),
+    HalfByteParameter('light-intensity',              "Intensity of the light of the device",                                     0x23, HalfByteParameter.Position.Upper,  True, False),
+    TimeZoneParameter('timezone',                     "Timezone for the time parameters",                                         0x24,                                    True, False),
     # Bit 6 and 7 of byte 0x24 are ignored [0, 0]                                                                                                                              ),
-    EnumParameter(    'device-state',                 "Current state of the device",                                              0x25, DeviceStates, 0,                  False), # TODO check
+    EnumParameter(    'device-state',                 "Current state of the device",                                              0x25, DeviceStates, 0,                  False,  True), # TODO check
     # Bit 7 of byte 0x25 is ignored [0]                                                                                                                                        ),
-    EnumParameter(    'actual-stop-mode',             "How the device actually stopped",                                          0x26, StopModes, 0,                     False), # TODO check
-    BitParameter(     'temporary-pdf',                "Generate a PDF file even if the device is temporarily stopped",            0x26, 3,                                 True),
-    BitParameter(     'display-time',                 "TODO",                                                                     0x26, 4,                                 True), # NOTE No effect
+    EnumParameter(    'actual-stop-mode',             "How the device actually stopped",                                          0x26, StopModes, 0,                     False,  True), # TODO check
+    BitParameter(     'temporary-pdf',                "Generate a PDF file even if the device is temporarily stopped",            0x26, 3,                                 True, False),
+    BitParameter(     'display-time',                 "TODO",                                                                     0x26, 4,                                 True, False), # NOTE No effect
     # Bit 5, 6 and 7 of byte 0x26 are ignored [0, 0, 0]                                                                                                                        ),
-    HalfByteParameter('battery-level',                "Current charging level of the battery",                                    0x27, HalfByteParameter.Position.Lower, False),
-    BitParameter(     'csv',                          "Encode measurement data in PDF file",                                      0x27, 4,                                 True), # NOTE Does not work on RC-5+
+    HalfByteParameter('battery-level',                "Current charging level of the battery",                                    0x27, HalfByteParameter.Position.Lower, False,  True),
+    BitParameter(     'csv',                          "Encode measurement data in PDF file",                                      0x27, 4,                                 True, False), # NOTE Does not work on RC-5+
     # Bit 5, 6 and 7 of byte 0x27 are ignored [0, 0, 0]                                                                                                                        ),
-    DateTimeParameter('configuration-time',           "Time at which the device was last configured",                             0x28,                                    True),
-    #ByteParameter(   'timezone-minutes',             "Minute part of the timezone offset",                                       0x2F,                                    True),
-    DateTimeParameter('start-time',                   "TODO",                                                                     0x30,                                   False),
+    DateTimeParameter('configuration-time',           "Time at which the device was last configured",                             0x28,                                    True, False),
+    #ByteParameter(   'timezone-minutes',             "Minute part of the timezone offset",                                       0x2F,                                    True, False),
+    DateTimeParameter('start-time',                   "TODO",                                                                     0x30,                                   False, False),
     # Byte 0x37 is ignored [0x00]                                                                                                                                              ),
-    DateTimeParameter('stop-time',                    "TODO",                                                                     0x38,                                   False),
+    DateTimeParameter('stop-time',                    "TODO",                                                                     0x38,                                   False, False),
     # Byte 0x3F is ignored [0x00]                                                                                                                                              ),
-    WordParameter(    'start-delay',                  "Delay to wait before starting in \"Timer\" start mode",                    0x40,                                    True), # TODO test
-    DWordParameter(   'device-capacity',              "Device capacity (in records)",                                             0x42,                                   False),
+    WordParameter(    'start-delay',                  "Delay to wait before starting in \"Timer\" start mode",                    0x40,                                    True, False), # TODO test
+    DWordParameter(   'device-capacity',              "Device capacity (in records)",                                             0x42,                                   False, False),
     #DWordParameter(  'record-number',                "Number of record currently in memory",                                     0x46,                                   False), # TODO !TLOG and protocol-version >= 0x24
-    WordParameter(    'record-number',                "Number of record currently in memory",                                     0x48,                                   False), # TODO !TLOG and protocol-version <  0x24
+    WordParameter(    'record-number',                "Number of record currently in memory",                                     0x48,                                   False, False), # TODO !TLOG and protocol-version <  0x24
     # Bytes 0x4A and 0x4B are ignored [0x00, 0x00]                                                                                                                             ),
-    TimeSpanParameter('interval',                     "Time span between samples",                                                0x4C,                                    True),
+    TimeSpanParameter('interval',                     "Time span between samples",                                                0x4C,                                    True, False),
 
-    StringParameter(  'password',                     "Password used to protect PDF files",                                       0x80, 6,                                 True),
-    DateTimeParameter('device-time',                  "Current device time",                                                      0x88,                                   False),
-    ByteParameter(    'protocol-version',             "Version number of the protocol",                                           0x95,                                   False),
+    StringParameter(  'password',                     "Password used to protect PDF files",                                       0x80, 6,                                 True, False),
+    DateTimeParameter('device-time',                  "Current device time",                                                      0x88,                                   False,  True),
+    ByteParameter(    'protocol-version',             "Version number of the protocol",                                           0x95,                                   False, False),
 ]
 
 class Parameters:

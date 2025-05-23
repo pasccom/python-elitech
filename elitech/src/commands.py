@@ -357,6 +357,7 @@ class ConfigWrite(Command):
         if not self.__dev:
             warning(f"No device selected. Only there to check the request.")
 
+        # Read old values for parameters
         answers = []
         for r in self.__ranges:
             frame = Frame(Frame.Operation.GetParameter, r.start, r.len)
@@ -366,14 +367,21 @@ class ConfigWrite(Command):
                     answers.append(frame.parse(self.__dev.read()))
                 except ValueError as e:
                     warning(f"Got invalid response ({str(e)})")
+        # Set new parameter values in answers
         answers = Response.merge(answers)
         for p in self.__params:
             for a in answers:
                 if p.range in a.range:
                     a[p.range] = bytes(p | a[p.range])
+        # Zero non writable parameters
+        parameters = Parameters()
+        for p in parameters:
+            for a in answers:
+                if not p.writable and p.immutable and (p.range in a.range):
+                    a[p.range] = bytes(p | a[p.range])
         print(answers)
+        # Write parameters
         for r1 in self.__ranges:
-            parameters = Parameters()
             if self.__compat:
                 splitRanges = [r1]
                 p = parameters['configuration-time'].now()

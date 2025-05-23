@@ -293,8 +293,11 @@ class ConfigWrite(Command):
     cmdArgs = 'parameter=value | parameter value ...'
 
     def __init__(self, args, *params):
+        # Arguments processing
         self.__dev = Device(args.dev)
+        self.__compat = args.compat
 
+        # Parameters list processing
         if (len(params) == 0):
             raise ValueError(f"No parameters were given")
 
@@ -334,15 +337,28 @@ class ConfigWrite(Command):
         if (len(self.__params) == 0):
             raise ValueError(f"All parameters have been ignored")
 
-    def execute(self):
-        ranges = Range.optimize([p.range for p in self.__params])
-        print(ranges)
+        # Range processing
+        self.__ranges = []
+        if self.__compat:
+            self.__ranges = ranges = [
+                Range(0x00, 0x30),
+                Range(0x30, 0x30),
+                Range(0x60, 0x30),
+                Range(0x98, 0x34),
+                Range(0xCC, 0x30),
+                Range(0xFD, 0x2F),
+            ]
 
+        if any([all([p.range not in r for r in self.__ranges]) for p in self.__params]):
+            self.__ranges = Range.optimize([p.range for p in self.__params])
+        print(self.__ranges)
+
+    def execute(self):
         if not self.__dev:
             warning(f"No device selected. Only there to check the request.")
 
         answers = []
-        for r in ranges:
+        for r in self.__ranges:
             frame = Frame(Frame.Operation.GetParameter, r.start, r.len)
             with self.__dev:
                 self.__dev.write(bytes(frame))
@@ -356,9 +372,15 @@ class ConfigWrite(Command):
                 if p.range in a.range:
                     a[p.range] = bytes(p | a[p.range])
         print(answers)
-        for r1 in ranges:
+        for r1 in self.__ranges:
             parameters = Parameters()
-            if parameters['configuration-time'].range not in r1:
+            if self.__compat:
+                splitRanges = [r1]
+                p = parameters['configuration-time'].now()
+                for a in answers:
+                    if p.range in a.range:
+                        a[p.range] = bytes(p | a[p.range])
+            elif parameters['configuration-time'].range not in r1:
                 splitRanges = [r1]
             elif parameters['configuration-time'] in self.__params:
                 splitRanges = [r1]

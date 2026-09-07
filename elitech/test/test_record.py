@@ -133,6 +133,30 @@ class TestRecord(unittest.TestCase):
         self.assertIsNone(Record.parse(bytes([0xFF]*8)))
 
     @testdata.TestData([
+        # Real records downloaded from an Elitech RC-5 (protocol version 0x35, temperature only)
+        {'frame': 'C0 D0 9A 34 B1 27 19 FA', 't': datetime(2026, 9, 6, 17, 25, 52), 'temperature': 31.7, 'humidity': None, 'flagStr': '---'},
+        {'frame': 'C0 D0 9A 34 31 28 28 FA', 't': datetime(2026, 9, 6, 17, 40, 52), 'temperature': 32.1, 'humidity': None, 'flagStr': '---'},
+        # Same layout with a humidity reading (bit 6 clear, humidity in the last two bytes)
+        {'frame': '80 D0 9A 34 B1 27 19 32', 't': datetime(2026, 9, 6, 17, 25, 52), 'temperature': 31.7, 'humidity': 20.0, 'flagStr': '---'},
+        # Negative temperature (sign in bit 3) and no humidity (sign in bit 6, -100.0 sentinel)
+        {'frame': 'C8 D0 9A 34 B1 27 19 FA', 't': datetime(2026, 9, 6, 17, 25, 52), 'temperature': -31.7, 'humidity': None, 'flagStr': '---'},
+        # Flags: mark, light and vibration, from the low bits of the first byte
+        {'frame': 'F1 D0 9A 34 B1 27 19 FA', 't': datetime(2026, 9, 6, 17, 25, 52), 'temperature': 31.7, 'humidity': None, 'flagStr': 'MLV'},
+        # Temperature using the 12th bit (bit 1 of the second byte): 1 << 11 = 2048 -> 204.8
+        {'frame': 'C0 02 9A 34 11 00 19 FA', 't': datetime(2026, 9, 6, 17, 25, 0), 'temperature': 204.8, 'humidity': None, 'flagStr': '---'},
+    ])
+    def testParseNewFormat(self, frame, t, temperature, humidity, flagStr):
+        r = Record.parse(bytes([int(b, 16) for b in frame.split(' ')]), 0x35)
+        self.assertEqual(r.time, t)
+        self.assertAlmostEqual(r.temperature, temperature, places=1)
+        self.assertEqual(r.humidity, humidity)
+        self.assertEqual(r.flagStr, flagStr)
+
+    def testParseNewFormatNone(self):
+        # An erased record is empty whatever the protocol version
+        self.assertIsNone(Record.parse(bytes([0xFF]*8), 0x35))
+
+    @testdata.TestData([
         {'frame': '00 E9 96 D0 D5 19 23 00', 'b': 8, 't': datetime(2022, 1, 26, 21, 35, 58), 'temperature':  20.6, 'humidity':  None, 'flags': 0                                      },
         {'frame': '00 EA 96 D0 D5 19 23 00', 'b': 9, 't': datetime(2022, 1, 26, 21, 35, 58), 'temperature':  20.6, 'humidity':  None, 'flags': 0                                      },
         {'frame': '00 E9 96 D0 D5 19 E3 31', 'b': 8, 't': datetime(2022, 1, 26, 21, 35, 58), 'temperature':  20.6, 'humidity':  19.9, 'flags': 0                                      },

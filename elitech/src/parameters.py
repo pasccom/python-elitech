@@ -166,7 +166,14 @@ class StringParameter(Parameter):
         self._len = length
 
     def parseData(self, data):
-        self._value = data.decode().replace('\x00', '')
+        # The bytes which the device did not write are left blank (0x00) or erased (0xFF)
+        data = bytes([b for b in data if (b != 0x00) and (b != 0xFF)])
+        try:
+            self._value = data.decode()
+        except UnicodeDecodeError:
+            text = ' '.join([f'{b:02X}' for b in data])
+            warning(f"Invalid text data: {text}")
+            self._value = data.decode(errors='replace')
         return self
 
     def parseValue(self, value):
@@ -186,7 +193,14 @@ class DateTimeParameter(Parameter):
         self._len = 7
 
     def parseData(self, data):
-        self._value = datetime.datetime(2000 + data[0], data[1], data[3], data[4], data[5], data[6])
+        try:
+            self._value = datetime.datetime(2000 + data[0], data[1], data[3], data[4], data[5], data[6])
+        except ValueError:
+            # A date which was never set is left erased (0xFF) or blank (0x00) by the device
+            if any([b not in [0x00, 0xFF] for b in data]):
+                date = ' '.join([f'{b:02X}' for b in data])
+                warning(f"Invalid date and time data: {date}")
+            self._value = None
         return self
 
     def parseValue(self, value):
@@ -205,7 +219,9 @@ class DateTimeParameter(Parameter):
     def __bytes__(self):
         if self._value is None:
             return bytes([0x00]*self._len)
-        return bytes([self._value.year - 2000, self._value.month, 0x00, self._value.day, self._value.hour, self._value.minute, self._value.second])
+        # The third byte is the day of the week, counted from Sunday, as
+        # `DataFactory.GetListForSet` of the official software writes it
+        return bytes([self._value.year - 2000, self._value.month, self._value.isoweekday() % 7, self._value.day, self._value.hour, self._value.minute, self._value.second])
 
 class UnsignedIntegerParameter(Parameter):
     def parseData(self, data):
@@ -265,6 +281,23 @@ class DWordParameter(UnsignedIntegerParameter):
     def __init__(self, *args, **kwArgs):
         super().__init__(*args, **kwArgs)
         self._len = 4
+
+
+class CapacityParameter(DWordParameter):
+    """Capacity of the device, in records.
+
+    Recent devices (e.g. the Elitech RC-5, which reports protocol version 0x35) leave
+    the bytes they do not write erased (0xFF) instead of blank (0x00), and only write
+    the low half of this field. Its 32000 records would otherwise be read as
+    0xFFFF7D00. Leading erased bytes are therefore not part of the value.
+    """
+    def parseData(self, data):
+        self._value = 0
+        for b in data:
+            if (self._value == 0) and (b == 0xFF):
+                continue
+            self._value = (self._value << 8) | b
+        return self
 
 
 class EnumParameter(Parameter):
@@ -736,7 +769,7 @@ parameters = [
     DateTimeParameter('stop-time',                    "TODO",                                                                     0x38,                                   False, False),
     # Byte 0x3F is ignored [0x00]                                                                                                                                              ),
     WordParameter(    'start-delay',                  "Delay to wait before starting in \"Timer\" start mode",                    0x40,                                    True, False), # TODO test
-    DWordParameter(   'device-capacity',              "Device capacity (in records)",                                             0x42,                                   False, False),
+    CapacityParameter('device-capacity',              "Device capacity (in records)",                                             0x42,                                   False, False),
     #DWordParameter(  'record-number',                "Number of record currently in memory",                                     0x46,                                   False), # TODO !TLOG and protocol-version >= 0x24
     WordParameter(    'record-number',                "Number of record currently in memory",                                     0x48,                                   False, False), # TODO !TLOG and protocol-version <  0x24
     # Bytes 0x4A and 0x4B are ignored [0x00, 0x00]                                                                                                                             ),

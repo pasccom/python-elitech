@@ -22,11 +22,13 @@ from PythonUtils import testdata
 from enum import Enum
 import datetime
 import math
+import warnings
 
 from elitech.src.parameters import Range
 from elitech.src.parameters import StringParameter
 from elitech.src.parameters import DateTimeParameter
 from elitech.src.parameters import DWordParameter
+from elitech.src.parameters import CapacityParameter
 from elitech.src.parameters import WordParameter
 from elitech.src.parameters import ByteParameter
 from elitech.src.parameters import EnumParameter
@@ -81,6 +83,29 @@ class TestStringParameter(unittest.TestCase):
         self.assertEqual(str(param), expectedValue)
         self.assertEqual(bytes(param), data)
 
+    @testdata.TestData([
+        # A device (e.g. the Elitech RC-5) which leaves the bytes it does not write erased
+        {'data': bytes([0x41, 0x42, 0x43] + [0xFF]*9),         'expectedValue': 'ABC'},
+        {'data': bytes([0x41, 0xFF, 0x42, 0x00, 0x43] + [0xFF]*7), 'expectedValue': 'ABC'},
+        {'data': bytes([0xFF]*12),                            'expectedValue': ''},
+    ])
+    def testParseErasedData(self, data, expectedValue):
+        param = StringParameter('test-name', 'Test description', 0, 12, True, False)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            param.parseData(data)
+        self.assertEqual(len(w), 0)
+        self.assertEqual(param.value, expectedValue)
+
+    def testParseInvalidData(self):
+        param = StringParameter('test-name', 'Test description', 0, 12, True, False)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            param.parseData(bytes([0x41, 0x80, 0x42] + [0x00]*9))
+        self.assertEqual(len(w), 1)
+        self.assertEqual(str(w[0].message), 'Invalid text data: 41 80 42')
+        self.assertIsNotNone(param.value)
+
 
     @testdata.TestData([
         {'value': 'abcdefghijkl', 'expectedBytes': b'abcdefghijkl'                                    },
@@ -120,8 +145,8 @@ class TestDateTimeParameter(unittest.TestCase):
         self.assertEqual(bytes(param), bytes([0x00]*7))
 
     @testdata.TestData([
-        {'data': bytes([0x01, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00]), 'expectedValue': datetime.datetime(2001, 1, 1, 0, 0, 0), 'expectedStr': '2001-01-01 00:00:00'},
-        {'data': bytes([0x01, 0x02, 0x00, 0x03, 0x04, 0x05, 0x06]), 'expectedValue': datetime.datetime(2001, 2, 3, 4, 5, 6), 'expectedStr': '2001-02-03 04:05:06'},
+        {'data': bytes([0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00]), 'expectedValue': datetime.datetime(2001, 1, 1, 0, 0, 0), 'expectedStr': '2001-01-01 00:00:00'},
+        {'data': bytes([0x01, 0x02, 0x06, 0x03, 0x04, 0x05, 0x06]), 'expectedValue': datetime.datetime(2001, 2, 3, 4, 5, 6), 'expectedStr': '2001-02-03 04:05:06'},
     ])
     def testParseData(self, data, expectedValue, expectedStr):
         param = DateTimeParameter('test-name', 'Test description', 0, True, False)
@@ -132,8 +157,8 @@ class TestDateTimeParameter(unittest.TestCase):
 
 
     @testdata.TestData([
-        {'value': '2001-01-01 00:00:00', 'expectedValue': datetime.datetime(2001, 1, 1, 0, 0, 0), 'expectedBytes': bytes([0x01, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00])},
-        {'value': '2001-02-03 04:05:06', 'expectedValue': datetime.datetime(2001, 2, 3, 4, 5, 6), 'expectedBytes': bytes([0x01, 0x02, 0x00, 0x03, 0x04, 0x05, 0x06])},
+        {'value': '2001-01-01 00:00:00', 'expectedValue': datetime.datetime(2001, 1, 1, 0, 0, 0), 'expectedBytes': bytes([0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00])},
+        {'value': '2001-02-03 04:05:06', 'expectedValue': datetime.datetime(2001, 2, 3, 4, 5, 6), 'expectedBytes': bytes([0x01, 0x02, 0x06, 0x03, 0x04, 0x05, 0x06])},
     ])
     def testParseValue(self, value, expectedValue, expectedBytes):
         param = DateTimeParameter('test-name', 'Test description', 0, True, False)
@@ -143,6 +168,33 @@ class TestDateTimeParameter(unittest.TestCase):
         self.assertEqual(bytes(param), expectedBytes)
 
 
+    @testdata.TestData([
+        {'data': bytes([0xFF]*7)},
+        {'data': bytes([0x00]*7)},
+    ])
+    def testParseUnsetData(self, data):
+        param = DateTimeParameter('test-name', 'Test description', 0, True, False)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            param.parseData(data)
+        self.assertEqual(len(w), 0)
+        self.assertIsNone(param.value)
+        self.assertEqual(str(param), '')
+
+    @testdata.TestData([
+        {'data': bytes([0x01, 0x0D, 0x00, 0x01, 0x00, 0x00, 0x00]), 'expectedWarning': 'Invalid date and time data: 01 0D 00 01 00 00 00'},
+        {'data': bytes([0x01, 0x01, 0x00, 0x20, 0x00, 0x00, 0x00]), 'expectedWarning': 'Invalid date and time data: 01 01 00 20 00 00 00'},
+    ])
+    def testParseInvalidData(self, data, expectedWarning):
+        param = DateTimeParameter('test-name', 'Test description', 0, True, False)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            param.parseData(data)
+        self.assertEqual(len(w), 1)
+        self.assertEqual(str(w[0].message), expectedWarning)
+        self.assertIsNone(param.value)
+        self.assertEqual(str(param), '')
+
     def testNow(self):
         param = DateTimeParameter('test-name', 'Test description', 0, True, False)
         before = datetime.datetime.now()
@@ -150,6 +202,34 @@ class TestDateTimeParameter(unittest.TestCase):
         after = datetime.datetime.now()
         self.assertGreaterEqual(param.value, before)
         self.assertLessEqual(param.value, after)
+
+
+class TestCapacityParameter(unittest.TestCase):
+    def testConstructor(self):
+        param = CapacityParameter('test-name', 'Test description', 0x42, False, False)
+        self.assertEqual(param.len, 4)
+        self.assertEqual(param.range, Range(0x42, 4))
+        self.assertIsNone(param.value)
+        self.assertEqual(str(param), '')
+
+    @testdata.TestData([
+        # A device which blanks the bytes it does not write
+        {'data': bytes([0x00, 0x00, 0x7D, 0x00]), 'expectedValue': 32000, 'expectedStr': '0x00007D00'},
+        # A device (e.g. the Elitech RC-5) which leaves them erased
+        {'data': bytes([0xFF, 0xFF, 0x7D, 0x00]), 'expectedValue': 32000, 'expectedStr': '0x00007D00'},
+        {'data': bytes([0xFF, 0xFF, 0xFF, 0x40]), 'expectedValue':    64, 'expectedStr': '0x00000040'},
+        # A value which really uses the whole field is not truncated
+        {'data': bytes([0x00, 0x01, 0xFF, 0xFF]), 'expectedValue': 131071, 'expectedStr': '0x0001FFFF'},
+        {'data': bytes([0xFF, 0xFF, 0xFF, 0xFF]), 'expectedValue':      0, 'expectedStr': '0x00000000'},
+    ])
+    def testParseData(self, data, expectedValue, expectedStr):
+        param = CapacityParameter('test-name', 'Test description', 0x42, False, False)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            param.parseData(data)
+        self.assertEqual(len(w), 0)
+        self.assertEqual(param.value, expectedValue)
+        self.assertEqual(str(param), expectedStr)
 
 
 class TestDWordParameter(unittest.TestCase):

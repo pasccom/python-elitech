@@ -17,6 +17,7 @@
 
 from pathlib import Path
 
+import select
 import sys
 import warnings
 sys.path.insert(0, str(Path(__file__).parents[2] / 'HIDParser'))
@@ -69,6 +70,11 @@ class WarningFilter:
             self.__old(message, category, filename, lineno, file=None, line=None)
 
 class Device:
+    # The device is not required to answer every request: the Elitech RC-5 stays
+    # silent when a record is requested beyond the ones it holds. Waiting forever
+    # on such a request would hang the tool, hence this timeout (in seconds).
+    ReadTimeout = 2.
+
     def __init__(self, devPath):
         self.path = devPath
         if self.path and (type(self.path) is str):
@@ -163,13 +169,25 @@ class Device:
         response = None
         if self.__dev is not None:
             try:
-                response = self.__dev.read(self.inReportSize)
+                if self.__wait():
+                    response = self.__dev.read(self.inReportSize)
+                else:
+                    warnings.warn(f"Device did not answer within {Device.ReadTimeout}s")
             except KeyboardInterrupt:
                 pass
         if response is None:
             response = bytes([0]*self.inReportSize)
         print("Response: " + ' '.join([f'{b:02X}' for b in response]))
         return response
+
+    def __wait(self):
+        try:
+            fd = self.__dev.fileno()
+        except (AttributeError, OSError, ValueError):
+            return True
+        if type(fd) is not int:
+            return True
+        return (len(select.select([fd], [], [], Device.ReadTimeout)[0]) != 0)
 
     def __resolve(self):
         if not self.path:

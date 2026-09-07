@@ -20,6 +20,7 @@ import unittest.mock
 
 from PythonUtils import mockpath
 
+import os
 import warnings
 
 from pathlib import Path
@@ -166,6 +167,59 @@ class TestDevice(unittest.TestCase):
 
         self.assertEqual(len(mock_print.call_args_list), 1)
         self.assertEqual(mock_print.call_args_list[0][0][0], 'Request:  ' + ' '.join([(f'{b:02X}' if b < 11 else '00') for b in range(0, 64)]))
+
+    @unittest.mock.patch('elitech.src.device.print')
+    @unittest.mock.patch('elitech.src.device.open')
+    def testReadTimeout(self, mock_open, mock_print):
+        mock_descriptor = unittest.mock.MagicMock()
+        mock_descriptor.__enter__.return_value = mock_descriptor
+        with open(Path(__file__).parents[0] / 'data' / 'hid_report_descriptor', 'rb') as f:
+            mock_descriptor.read.return_value = f.read()
+        # A pipe nobody writes into stands for a device which does not answer
+        readFd, writeFd = os.pipe()
+        mock_open.side_effect = [os.fdopen(readFd, 'rb'), mock_descriptor]
+
+        dev = Device(Path('/dev/null'))
+        oldTimeout = Device.ReadTimeout
+        Device.ReadTimeout = 0.1
+        try:
+            with dev:
+                with warnings.catch_warnings(record=True) as w:
+                    warnings.simplefilter('always')
+                    self.assertEqual(dev.read(), bytes([0]*64))
+        finally:
+            Device.ReadTimeout = oldTimeout
+            os.close(writeFd)
+
+        self.assertEqual(len(w), 1)
+        self.assertEqual(str(w[0].message), 'Device did not answer within 0.1s')
+
+        self.assertEqual(len(mock_print.call_args_list), 1)
+        self.assertEqual(mock_print.call_args_list[0][0][0], 'Response: ' + ' '.join(['00']*64))
+
+    @unittest.mock.patch('elitech.src.device.print')
+    @unittest.mock.patch('elitech.src.device.open')
+    def testReadFileDescriptor(self, mock_open, mock_print):
+        mock_descriptor = unittest.mock.MagicMock()
+        mock_descriptor.__enter__.return_value = mock_descriptor
+        with open(Path(__file__).parents[0] / 'data' / 'hid_report_descriptor', 'rb') as f:
+            mock_descriptor.read.return_value = f.read()
+        # A pipe with an answer already in it stands for a device which answers
+        readFd, writeFd = os.pipe()
+        os.write(writeFd, bytes([b for b in range(0, 64)]))
+        os.close(writeFd)
+        mock_open.side_effect = [os.fdopen(readFd, 'rb'), mock_descriptor]
+
+        dev = Device(Path('/dev/null'))
+        with dev:
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter('always')
+                self.assertEqual(dev.read(), bytes([b for b in range(0, 64)]))
+
+        self.assertEqual(len(w), 0)
+
+        self.assertEqual(len(mock_print.call_args_list), 1)
+        self.assertEqual(mock_print.call_args_list[0][0][0], 'Response: ' + ' '.join([f'{b:02X}' for b in range(0, 64)]))
 
     @unittest.mock.patch('elitech.src.device.print')
     @unittest.mock.patch('elitech.src.device.open')

@@ -27,6 +27,7 @@ from hid_parser import ReportDescriptor, HIDComplianceWarning
 supportedDevices = [
     {'VId': 0x04d8, 'PId':0x0033, 'name': 'Elitech RC-51'               },
     {'VId': 0x04d8, 'PId':0x0133, 'name': 'Elitech RC-51H'              },
+    {'VId': 0x246c, 'PId':0x9001, 'name': 'Elitech RC-5'                },
     {'VId': 0x04d8, 'PId':0x3005, 'name': 'Elitech RC-5+'               },
     {'VId': 0x04d8, 'PId':0x0037, 'name': 'Elitech RC-55'               },
     {'VId': 0x04d8, 'PId':0x1014, 'name': 'Elitech TemLog 20'           },

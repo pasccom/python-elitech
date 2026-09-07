@@ -295,7 +295,13 @@ class ConfigWrite(Command):
     def __init__(self, args, *params):
         # Arguments processing
         self.__dev = Device(args.dev)
-        self.__compat = args.compat
+        # Some devices discard a partial configuration write, so the complete
+        # configuration has to be written for them, as in compatibility mode. This is the
+        # case of the Elitech RC-5, and, as reported in github.com/pasccom/python-elitech
+        # issue #1, of the RC-5+ with a recent firmware. Both report a protocol version of
+        # at least 0x30, which the older devices (that accept partial writes) do not reach.
+        self.__fullWrite = self.__protocolNeedsFullWrite()
+        self.__compat = args.compat or self.__fullWrite
 
         # Parameters list processing
         if (len(params) == 0):
@@ -348,10 +354,30 @@ class ConfigWrite(Command):
                 Range(0xCC, 0x30),
                 Range(0xFD, 0x2F),
             ]
+            if self.__fullWrite:
+                # `DataFactory.GetListForSet` of the official software writes this last
+                # block too. Without it, an Elitech RC-5 stops refreshing the
+                # configuration it serves: the record count, the device state and
+                # `device-time` keep the values they had when it was configured.
+                self.__ranges.append(Range(0x13C, 0x19))
 
         if any([all([p.range not in r for r in self.__ranges]) for p in self.__params]):
             self.__ranges = Range.optimize([p.range for p in self.__params])
         print(self.__ranges)
+
+    def __protocolNeedsFullWrite(self):
+        # A protocol version of at least 0x30 marks the devices which need a full write
+        if not self.__dev:
+            return False
+        param = Parameters()['protocol-version']
+        frame = Frame(Frame.Operation.GetParameter, param.range.start, param.range.len)
+        try:
+            with self.__dev:
+                self.__dev.write(bytes(frame))
+                version = param.parseData(frame.parse(self.__dev.read())[param.range]).value
+        except (ValueError, OSError):
+            return False
+        return (version is not None) and (version >= 0x30)
 
     def execute(self):
         if not self.__dev:
@@ -374,20 +400,23 @@ class ConfigWrite(Command):
                 if p.range in a.range:
                     a[p.range] = bytes(p | a[p.range])
         # Zero non writable parameters
+        # The devices needing a full write commit everything which is sent to them, so
+        # zeroing would durably destroy the values they report (e.g. 'firmware-version')
         parameters = Parameters()
-        for p in parameters:
-            for a in answers:
-                if not p.writable and p.immutable and (p.range in a.range):
-                    a[p.range] = bytes(p | a[p.range])
+        if not self.__fullWrite:
+            for p in parameters:
+                for a in answers:
+                    if not p.writable and p.immutable and (p.range in a.range):
+                        a[p.range] = bytes(p | a[p.range])
         print(answers)
         # Write parameters
         for r1 in self.__ranges:
             if self.__compat:
                 splitRanges = [r1]
-                p = parameters['configuration-time'].now()
-                for a in answers:
-                    if p.range in a.range:
-                        a[p.range] = bytes(p | a[p.range])
+                ConfigWrite.__writeNow(parameters['configuration-time'], answers)
+                # These devices do not derive their clock from 'configuration-time'
+                if self.__fullWrite:
+                    ConfigWrite.__writeNow(parameters['device-time'], answers)
             elif parameters['configuration-time'].range not in r1:
                 splitRanges = [r1]
             elif parameters['configuration-time'] in self.__params:
@@ -408,6 +437,13 @@ class ConfigWrite(Command):
                             if not result:
                                 params = ', '.join([p.name for p in self.__params if p.range in r2])
                                 warning(f"Could not write parameter(s): {params}")
+
+    @staticmethod
+    def __writeNow(param, answers):
+        param.now()
+        for a in answers:
+            if param.range in a.range:
+                a[param.range] = bytes(param | a[param.range])
 
     def __repr__(self):
         params = '", "'.join([p.name + '=' + str(p) for p in self.__params])

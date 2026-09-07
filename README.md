@@ -144,6 +144,16 @@ set by setting the `configuration-time` parameter. This can simply be done with
 $ python elitech --device [/dev/path] parameter set configuration-time "$(date '+%Y-%m-%d %H:%M:%S')"
 ```
 
+Some devices, such as the RC-5, discard a partial configuration write: it is
+acknowledged, and can even be read back, but the device reverts to its stored
+configuration a few seconds later. For these devices, the complete configuration
+is written, as the `--compat` option does, without having to give the option.
+Two consequences are worth keeping in mind:
+  - As the official software does, writing a parameter **deletes the records**
+which are in the device memory. Read them before you reconfigure the device.
+  - The RC-5 does not derive its clock from `configuration-time`, so `device-time`
+is written along with the configuration. There is no need to set it separately.
+
 ### Records
 The records can be read through the HID interface using
 ```sh

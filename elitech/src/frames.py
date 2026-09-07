@@ -103,6 +103,17 @@ class Response:
 
 class Frame:
     class Operation(Enum):
+        # The official software (ElitechLogWin 8.0.5.0) builds the same frames in
+        # `ElitechLog.Devices.Usb.DataFactory`. Its `RcCommandType` also has commands
+        # which are not implemented here: reading the serial number is `GetParameter`
+        # over [0x00, 0x30), reading the "rear shadow number" is `GetParameter` over
+        # [0x30, 0x60) and reading the "front shadow number" uses command 0x0005 over
+        # [0x80, 0xB0). It also knows about firmware update (with and without DFU).
+        #
+        # Note that the high byte below is what `DataFactory.GetListForRecord` calls
+        # the "extended command": it is a parameter of the record read, not part of
+        # the command. On an Elitech RC-5 which holds records, every value from 0 to 8
+        # was answered with "no record available", as 0 is.
         GetRecord = 0x0001
         GetParameter = 0x0003
         SetParameter = 0x0004

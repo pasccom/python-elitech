@@ -295,7 +295,13 @@ class ConfigWrite(Command):
     def __init__(self, args, *params):
         # Arguments processing
         self.__dev = Device(args.dev)
-        self.__compat = args.compat
+        # Some devices discard a partial configuration write, so the complete
+        # configuration has to be written for them, as in compatibility mode. This is the
+        # case of the Elitech RC-5, and, as reported in github.com/pasccom/python-elitech
+        # issue #1, of the RC-5+ with a recent firmware. Both report a protocol version of
+        # at least 0x30, which the older devices (that accept partial writes) do not reach.
+        self.__fullWrite = self.__protocolNeedsFullWrite()
+        self.__compat = args.compat or self.__fullWrite
 
         # Parameters list processing
         if (len(params) == 0):
@@ -348,10 +354,30 @@ class ConfigWrite(Command):
                 Range(0xCC, 0x30),
                 Range(0xFD, 0x2F),
             ]
+            if self.__fullWrite:
+                # `DataFactory.GetListForSet` of the official software writes this last
+                # block too. Without it, an Elitech RC-5 stops refreshing the
+                # configuration it serves: the record count, the device state and
+                # `device-time` keep the values they had when it was configured.
+                self.__ranges.append(Range(0x13C, 0x19))
 
         if any([all([p.range not in r for r in self.__ranges]) for p in self.__params]):
             self.__ranges = Range.optimize([p.range for p in self.__params])
         print(self.__ranges)
+
+    def __protocolNeedsFullWrite(self):
+        # A protocol version of at least 0x30 marks the devices which need a full write
+        if not self.__dev:
+            return False
+        param = Parameters()['protocol-version']
+        frame = Frame(Frame.Operation.GetParameter, param.range.start, param.range.len)
+        try:
+            with self.__dev:
+                self.__dev.write(bytes(frame))
+                version = param.parseData(frame.parse(self.__dev.read())[param.range]).value
+        except (ValueError, OSError):
+            return False
+        return (version is not None) and (version >= 0x30)
 
     def execute(self):
         if not self.__dev:
@@ -374,20 +400,23 @@ class ConfigWrite(Command):
                 if p.range in a.range:
                     a[p.range] = bytes(p | a[p.range])
         # Zero non writable parameters
+        # The devices needing a full write commit everything which is sent to them, so
+        # zeroing would durably destroy the values they report (e.g. 'firmware-version')
         parameters = Parameters()
-        for p in parameters:
-            for a in answers:
-                if not p.writable and p.immutable and (p.range in a.range):
-                    a[p.range] = bytes(p | a[p.range])
+        if not self.__fullWrite:
+            for p in parameters:
+                for a in answers:
+                    if not p.writable and p.immutable and (p.range in a.range):
+                        a[p.range] = bytes(p | a[p.range])
         print(answers)
         # Write parameters
         for r1 in self.__ranges:
             if self.__compat:
                 splitRanges = [r1]
-                p = parameters['configuration-time'].now()
-                for a in answers:
-                    if p.range in a.range:
-                        a[p.range] = bytes(p | a[p.range])
+                ConfigWrite.__writeNow(parameters['configuration-time'], answers)
+                # These devices do not derive their clock from 'configuration-time'
+                if self.__fullWrite:
+                    ConfigWrite.__writeNow(parameters['device-time'], answers)
             elif parameters['configuration-time'].range not in r1:
                 splitRanges = [r1]
             elif parameters['configuration-time'] in self.__params:
@@ -408,6 +437,13 @@ class ConfigWrite(Command):
                             if not result:
                                 params = ', '.join([p.name for p in self.__params if p.range in r2])
                                 warning(f"Could not write parameter(s): {params}")
+
+    @staticmethod
+    def __writeNow(param, answers):
+        param.now()
+        for a in answers:
+            if param.range in a.range:
+                a[param.range] = bytes(param | a[param.range])
 
     def __repr__(self):
         params = '", "'.join([p.name + '=' + str(p) for p in self.__params])
@@ -631,6 +667,107 @@ class Stop(Command):
 
     def __repr__(self):
         return f'StopCommand({self.__dev})'
+
+
+class Reset(Command):
+    """
+        Reset a stopped Elitech device so that it can record again
+
+        A stopped RC-5 cannot be restarted by its button, and writing the
+        configuration alone does not re-arm it. This reproduces what the
+        official software calls "Quick Reset": the whole configuration is
+        written, a format is sent (which clears the records and the device's
+        internal record counters), and the configuration is written once more,
+        as the format erases it. The device is then armable again (press the
+        left button for 5 s to start a recording).
+
+        Beware that this deletes the records in the device memory. Read them
+        before resetting the device.
+    """
+
+    cmdName = ('reset')
+
+    # The blocks the official software writes for a full configuration
+    Blocks = [
+        Range(0x00, 0x30),
+        Range(0x30, 0x30),
+        Range(0x60, 0x30),
+        Range(0x98, 0x34),
+        Range(0xCC, 0x30),
+        Range(0xFD, 0x2F),
+        Range(0x13C, 0x19),
+    ]
+
+    def __init__(self, args, *params):
+        self.__dev = Device(args.dev)
+        if (len(params) > 0):
+            params = '", "'.join(params)
+            warning(f"Ignored parameters: \"{params}\"")
+
+    def __read(self):
+        blocks = []
+        for r in Reset.Blocks:
+            frame = Frame(Frame.Operation.GetParameter, r.start, r.len)
+            self.__dev.write(bytes(frame))
+            try:
+                blocks.append(bytearray(frame.parse(self.__dev.read())[r]))
+            except ValueError as e:
+                warning(f"Got invalid response ({str(e)})")
+                blocks.append(bytearray([0x00]*r.len))
+        return blocks
+
+    @staticmethod
+    def __put(blocks, addr, data):
+        for r, block in zip(Reset.Blocks, blocks):
+            if (r.start <= addr) and (addr + len(data) <= r.start + r.len):
+                block[(addr - r.start):(addr - r.start + len(data))] = data
+                return
+        warning(f"Address {addr:#04x} is not in the configuration blocks")
+
+    def __write(self, blocks):
+        for r, block in zip(Reset.Blocks, blocks):
+            frame = Frame(Frame.Operation.SetParameter, r.start, bytes(block))
+            self.__dev.write(bytes(frame))
+            try:
+                if not frame.parse(self.__dev.read()):
+                    warning(f"Could not write configuration block {r}")
+            except ValueError as e:
+                warning(f"Got invalid response ({str(e)})")
+
+    def execute(self):
+        if not self.__dev:
+            warning(f"No device selected. Only there to check the request.")
+            return
+
+        parameters = Parameters()
+        with self.__dev:
+            # Read the current configuration to reuse it (the format erases it)
+            blocks = self.__read()
+
+            # Bring it to the "ready to record" state, with the clock set and the
+            # records cleared
+            now = parameters['device-time'].now()
+            Reset.__put(blocks, 0x25, b'\x04')                     # device state: ready
+            Reset.__put(blocks, 0x26, b'\x17')                     # actual stop mode: none
+            Reset.__put(blocks, parameters['device-time'].offset, bytes(now))
+            Reset.__put(blocks, parameters['configuration-time'].offset, bytes(now))
+            Reset.__put(blocks, 0x30, bytes([0xFF]*16))           # start and stop time: unset
+            Reset.__put(blocks, 0x46, bytes([0x00]*4))            # record counters
+            Reset.__put(blocks, 0x4A, bytes([0x00]*2))
+            Reset.__put(blocks, 0x5A, bytes([0x00]*4))
+
+            # 1) configuration, 2) format (clears records), 3) configuration again
+            self.__write(blocks)
+            frame = Frame(Frame.Operation.FormatCommand, 0, b'\x00')
+            self.__dev.write(bytes(frame))
+            try:
+                self.__dev.read()
+            except ValueError as e:
+                warning(f"Got invalid response ({str(e)})")
+            self.__write(blocks)
+
+    def __repr__(self):
+        return f'ResetCommand({self.__dev})'
 
 
 class Format(Command):

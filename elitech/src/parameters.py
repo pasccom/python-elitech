@@ -677,7 +677,19 @@ class AlarmModes(Enum):
     MAX      = 0b11
 
 class DeviceStates(Enum):
-    MAX = 0b1111111
+    # Values contributed by SarangKulkarni (github.com/pasccom/python-elitech issue #1)
+    # and consistent with the RC-5 observed here: the RC-5 sets bit 6, the RC-51H and the
+    # RC-5+ do not. The low bits are the same for both: 0b0100 configured, 0b0101 waiting
+    # for the start delay, 0b0111 logging, 0b1001 stopped.
+    Configured    = 0b0000100 # RC-51H, RC-5+
+    StartDelay    = 0b0000101 # RC-51H, RC-5+
+    Logging       = 0b0000111 # RC-51H, RC-5+
+    Stopped       = 0b0001001 # RC-51H, RC-5+
+    ConfiguredRC5 = 0b1000100 # RC-5
+    StartDelayRC5 = 0b1000101 # RC-5
+    LoggingRC5    = 0b1000111 # RC-5
+    StoppedRC5    = 0b1001001 # RC-5
+    MAX           = 0b1111111
 
 class StopModes(Enum):
     Manual    = 0b000
@@ -739,6 +751,10 @@ parameters = [
     DWordParameter(   'device-capacity',              "Device capacity (in records)",                                             0x42,                                   False, False),
     #DWordParameter(  'record-number',                "Number of record currently in memory",                                     0x46,                                   False), # TODO !TLOG and protocol-version >= 0x24
     WordParameter(    'record-number',                "Number of record currently in memory",                                     0x48,                                   False, False), # TODO !TLOG and protocol-version <  0x24
+    # NOTE `DataFactory.ParseRearShadowNumber` of the official software reads this count
+    # at 0x4A-0x4B, and at 0x5A-0x5B for its high half when the protocol version is at
+    # least 0x24. On an Elitech RC-5 (protocol version 0x35) which recorded two points,
+    # 0x49 held the count while 0x4A, 0x4B, 0x5A and 0x5B stayed erased (0xFF).
     # Bytes 0x4A and 0x4B are ignored [0x00, 0x00]                                                                                                                             ),
     TimeSpanParameter('interval',                     "Time span between samples",                                                0x4C,                                    True, False),
 

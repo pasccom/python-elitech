@@ -20,11 +20,68 @@ import unittest.mock
 
 from PythonUtils import mockpath
 
+import selectors
 import warnings
 
 from pathlib import Path
 
 from elitech.src.device import Device
+
+
+class MockSelector(selectors.BaseSelector):
+    def __init__(self):
+        self.__map = {}
+        self.__events = []
+        self.calls = []
+
+    def add_event(self, fileObjs, eventTypes, wait=0):
+        try:
+            self.__events.append((zip(fileObjs, eventTypes), wait))
+        except TypeError:
+            self.__events.append(([(fileObjs, eventTypes)], wait))
+
+    def add_timeout(self):
+        self.__events.append(([], 0))
+
+    def get_map(self):
+        return self.__map
+
+    def register(self, fileObj, events=selectors.EVENT_READ, data=None):
+        if fileObj in self.__map:
+            raise KeyError(f"{fileObj!r} is already registered")
+
+        ret = selectors.SelectorKey(fileObj, 0, events, data)
+        self.__map[fileObj] = ret
+        return ret
+
+    def unregister(self, fileObj):
+        if fileObj not in self.__map:
+            raise KeyError(f"{fileObj!r} is already registered")
+
+        ret = self.__map[fileObj]
+        del self.__map[fileObj]
+        return ret
+
+    def select(self, timeOut = -1):
+        self.calls.append((timeOut, ))
+
+        events, wait = self.__events.pop()
+        if (wait > 0):
+            time.sleep(wait)
+
+        registeredEvents = []
+        for f, e in events:
+            if f not in self.__map:
+                continue
+
+            key = self.__map[f]
+            if (key.events & e == 0):
+                continue
+
+            registeredEvents.append(selectors.SelectorKey(key.fileobj, key.fd, e, key.data))
+
+        #print(registeredEvents)
+        return registeredEvents
 
 
 class TestDevice(unittest.TestCase):
@@ -123,9 +180,11 @@ class TestDevice(unittest.TestCase):
         self.assertEqual(mock_print.call_args_list[0][0][0], 'Response: ' + ' '.join(['00']*64))
 
     @unittest.mock.patch('elitech.src.device.open')
-    def testOpen(self, mock_open):
+    @unittest.mock.patch('elitech.src.device.selectors.DefaultSelector')
+    def testOpen(self, mock_select, mock_open):
         mock_file = unittest.mock.Mock()
         mock_open.return_value = mock_file
+        mock_select.return_value = MockSelector()
 
         dev = Device(Path('/dev/null'))
         self.assertEqual(dev.path, Path('/dev/null'))
@@ -136,17 +195,21 @@ class TestDevice(unittest.TestCase):
         self.assertEqual(len(mock_open.call_args_list), 1)
         self.assertEqual(mock_open.call_args_list[0][0][0], Path('/dev/null'))
         self.assertEqual(mock_open.call_args_list[0][0][1], 'rb+')
+        self.assertEqual(len(mock_select.return_value.calls), 0)
         self.assertEqual(len(mock_file.close.call_args_list), 1)
 
     @unittest.mock.patch('elitech.src.device.print')
     @unittest.mock.patch('elitech.src.device.open')
-    def testWrite(self, mock_open, mock_print):
+    @unittest.mock.patch('elitech.src.device.selectors.DefaultSelector')
+    def testWrite(self, mock_select, mock_open, mock_print):
         mock_descriptor = unittest.mock.MagicMock()
         mock_descriptor.__enter__.return_value = mock_descriptor
         with open(Path(__file__).parents[0] / 'data' / 'hid_report_descriptor', 'rb') as f:
             mock_descriptor.read.return_value = f.read()
         mock_file = unittest.mock.Mock()
         mock_open.side_effect = [mock_file, mock_descriptor]
+
+        mock_select.return_value = MockSelector()
 
         dev = Device(Path('/dev/null'))
         self.assertEqual(dev.path, Path('/dev/null'))
@@ -159,6 +222,7 @@ class TestDevice(unittest.TestCase):
         self.assertEqual(mock_open.call_args_list[0][0][1], 'rb+')
         self.assertEqual(mock_open.call_args_list[1][0][0], Path('/sys/class/hidraw/null/device/report_descriptor'))
         self.assertEqual(mock_open.call_args_list[1][0][1], 'rb')
+        self.assertEqual(len(mock_select.return_value.calls), 0)
         self.assertEqual(len(mock_file.write.call_args_list), 1)
         self.assertEqual(mock_file.write.call_args_list[0][0][0], bytes([b for b in range(0, 11)] + [0]*53))
         self.assertEqual(len(mock_file.flush.call_args_list), 1)
@@ -169,7 +233,8 @@ class TestDevice(unittest.TestCase):
 
     @unittest.mock.patch('elitech.src.device.print')
     @unittest.mock.patch('elitech.src.device.open')
-    def testRead(self, mock_open, mock_print):
+    @unittest.mock.patch('elitech.src.device.selectors.DefaultSelector')
+    def testRead(self, mock_select, mock_open, mock_print):
         mock_descriptor = unittest.mock.MagicMock()
         mock_descriptor.__enter__.return_value = mock_descriptor
         with open(Path(__file__).parents[0] / 'data' / 'hid_report_descriptor', 'rb') as f:
@@ -178,6 +243,9 @@ class TestDevice(unittest.TestCase):
         mock_file.__enter__ = mock_file
         mock_file.read.return_value = bytes([b for b in range(0, 64)])
         mock_open.side_effect = [mock_file, mock_descriptor]
+
+        mock_select.return_value = MockSelector()
+        mock_select.return_value.add_event(mock_file, selectors.EVENT_READ)
 
         dev = Device(Path('/dev/null'))
         self.assertEqual(dev.path, Path('/dev/null'))
@@ -190,6 +258,8 @@ class TestDevice(unittest.TestCase):
         self.assertEqual(mock_open.call_args_list[0][0][1], 'rb+')
         self.assertEqual(mock_open.call_args_list[1][0][0], Path('/sys/class/hidraw/null/device/report_descriptor'))
         self.assertEqual(mock_open.call_args_list[1][0][1], 'rb')
+        self.assertEqual(len(mock_select.return_value.calls), 1)
+        self.assertEqual(mock_select.return_value.calls[0][0], 2)
         self.assertEqual(len(mock_file.read.call_args_list), 1)
         self.assertEqual(mock_file.read.call_args_list[0][0][0], 64)
         self.assertEqual(len(mock_file.close.call_args_list), 1)
@@ -199,7 +269,8 @@ class TestDevice(unittest.TestCase):
 
     @unittest.mock.patch('elitech.src.device.print')
     @unittest.mock.patch('elitech.src.device.open')
-    def testReadKeyboardInterrupt(self, mock_open, mock_print):
+    @unittest.mock.patch('elitech.src.device.selectors.DefaultSelector')
+    def testReadKeyboardInterrupt(self, mock_select, mock_open, mock_print):
         mock_descriptor = unittest.mock.MagicMock()
         mock_descriptor.__enter__.return_value = mock_descriptor
         with open(Path(__file__).parents[0] / 'data' / 'hid_report_descriptor', 'rb') as f:
@@ -209,19 +280,64 @@ class TestDevice(unittest.TestCase):
         mock_file.read.side_effect = KeyboardInterrupt
         mock_open.side_effect = [mock_file, mock_descriptor]
 
+        mock_select.return_value = MockSelector()
+        mock_select.return_value.add_event(mock_file, selectors.EVENT_READ)
+
         dev = Device(Path('/dev/null'))
         self.assertEqual(dev.path, Path('/dev/null'))
 
         with dev:
-            self.assertEqual(dev.read(), bytes([0x00]*64))
+            with warnings.catch_warnings(record=True) as w:
+                self.assertEqual(dev.read(), bytes([0x00]*64))
+            self.assertEqual(len(w), 1)
 
         self.assertEqual(len(mock_open.call_args_list), 2)
         self.assertEqual(mock_open.call_args_list[0][0][0], Path('/dev/null'))
         self.assertEqual(mock_open.call_args_list[0][0][1], 'rb+')
         self.assertEqual(mock_open.call_args_list[1][0][0], Path('/sys/class/hidraw/null/device/report_descriptor'))
         self.assertEqual(mock_open.call_args_list[1][0][1], 'rb')
+        self.assertEqual(len(mock_select.return_value.calls), 1)
+        self.assertEqual(mock_select.return_value.calls[0][0], 2)
         self.assertEqual(len(mock_file.read.call_args_list), 1)
         self.assertEqual(mock_file.read.call_args_list[0][0][0], 64)
+        self.assertEqual(len(mock_file.close.call_args_list), 1)
+
+        self.assertEqual(len(mock_print.call_args_list), 1)
+        self.assertEqual(mock_print.call_args_list[0][0][0], 'Response: ' + ' '.join(['00' for b in range(0, 64)]))
+
+    @unittest.mock.patch('elitech.src.device.print')
+    @unittest.mock.patch('elitech.src.device.open')
+    @unittest.mock.patch('elitech.src.device.selectors.DefaultSelector')
+    def testReadTimeout(self, mock_select, mock_open, mock_print):
+        mock_descriptor = unittest.mock.MagicMock()
+        mock_descriptor.__enter__.return_value = mock_descriptor
+        with open(Path(__file__).parents[0] / 'data' / 'hid_report_descriptor', 'rb') as f:
+            mock_descriptor.read.return_value = f.read()
+        mock_file = unittest.mock.Mock()
+        mock_file.__enter__ = mock_file
+        #mock_file.read.return_value = bytes([b for b in range(0, 64)])
+        mock_open.side_effect = [mock_file, mock_descriptor]
+
+        mock_select.return_value = MockSelector()
+        mock_select.return_value.add_timeout()
+
+
+        dev = Device(Path('/dev/null'))
+        self.assertEqual(dev.path, Path('/dev/null'))
+
+        with dev:
+            with warnings.catch_warnings(record=True) as w:
+                self.assertEqual(dev.read(), bytes([0x00]*64))
+            self.assertEqual(len(w), 1)
+
+        self.assertEqual(len(mock_open.call_args_list), 2)
+        self.assertEqual(mock_open.call_args_list[0][0][0], Path('/dev/null'))
+        self.assertEqual(mock_open.call_args_list[0][0][1], 'rb+')
+        self.assertEqual(mock_open.call_args_list[1][0][0], Path('/sys/class/hidraw/null/device/report_descriptor'))
+        self.assertEqual(mock_open.call_args_list[1][0][1], 'rb')
+        self.assertEqual(len(mock_select.return_value.calls), 1)
+        self.assertEqual(mock_select.return_value.calls[0][0], 2)
+        self.assertEqual(len(mock_file.read.call_args_list), 0)
         self.assertEqual(len(mock_file.close.call_args_list), 1)
 
         self.assertEqual(len(mock_print.call_args_list), 1)

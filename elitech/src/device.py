@@ -19,6 +19,7 @@ from pathlib import Path
 
 import sys
 import warnings
+import selectors
 sys.path.insert(0, str(Path(__file__).parents[2] / 'HIDParser'))
 
 from hid_parser import ReportDescriptor, HIDComplianceWarning
@@ -69,6 +70,8 @@ class WarningFilter:
             self.__old(message, category, filename, lineno, file=None, line=None)
 
 class Device:
+    timeout = 2.
+
     def __init__(self, devPath):
         self.path = devPath
         if self.path and (type(self.path) is str):
@@ -76,6 +79,7 @@ class Device:
         if self.path and not self.path.exists():
             raise ValueError(f"Device \"{self.path}\" does not exist")
         self.__dev = None
+        self.__selector = None
         self.__vendorId = None
         self.__productId = None
         self.__descriptor = None
@@ -86,10 +90,15 @@ class Device:
     def __enter__(self):
         if self.path:
             self.__dev = open(self.path, 'rb+')
+            self.__selector = selectors.DefaultSelector()
+            self.__selector.register(self.__dev, selectors.EVENT_READ)
         return self
 
 
     def __exit__(self, *args):
+        if self.__selector is not None:
+            self.__selector.close()
+            self.__selector = None
         if self.__dev is not None:
             self.__dev.close()
             self.__dev = None
@@ -163,13 +172,22 @@ class Device:
         response = None
         if self.__dev is not None:
             try:
-                response = self.__dev.read(self.inReportSize)
+                if self.__wait():
+                    response = self.__dev.read(self.inReportSize)
+                else:
+                    warnings.warn(f"Device communication timeout ({Device.timeout}s)")
             except KeyboardInterrupt:
-                pass
+                warnings.warn("Device communication interrupted")
         if response is None:
             response = bytes([0]*self.inReportSize)
         print("Response: " + ' '.join([f'{b:02X}' for b in response]))
         return response
+
+    def __wait(self):
+        if self.__selector is None:
+            return True
+        selected = self.__selector.select(Device.timeout)
+        return (len(selected) != 0) # There is only one registered file
 
     def __resolve(self):
         if not self.path:

@@ -17,6 +17,7 @@
 
 import argparse
 from .commands import Command
+from .device import Device
 
 def main():
     # Determine version from package information
@@ -35,10 +36,19 @@ def main():
                         help='The device to interact with')
     parser.add_argument('-c', '--compat', action='store_const', const=True, default=False,
                         help='Forces to write all parameters (as Elitech official software does). Should not be needed')
+    parser.add_argument('-t', '--timeout', action='store', default='2',
+                        help='How long to wait when the device does not respond')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + version)
     parser.add_argument('cmds', action='extend', nargs='+',
                         help="The commands to execute. To see help on a specific command, use the 'help' command.")
     args = parser.parse_args()
+
+    if 'timeout' in args:
+        try:
+            Device.timeout = float(args.timeout)
+        except ValueError:
+            raise ValueError(f"Could not parse timeout value: \"{args.timeout}\"")
+        delattr(args, 'dev')
 
     cmd = Command(args)
     print(cmd)

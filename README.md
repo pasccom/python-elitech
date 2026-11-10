@@ -28,13 +28,14 @@ REQUIREMENTS
 The following Elitech devices are supported. The software relies on the USB
 vendor and product identifiers, as listed in the second and third colums
 of the following table, to identify supported devices. Currently, 
-*python-elitech* has only been tested on an RC-5+, as indicated in the last
-column of the below table.
+*python-elitech* has only been tested on an RC-5, an RC-51H and an RC-5+,
+as indicated in the last column of the below table.
 
 | Name                         | Vendor Id  | Product Id | udev | Tested |
 |:-----------------------------|:----------:|:----------:|:----:|:------:|
 | Elitech RC-51                |   0x04d8   | 0x0033     | Yes  | No     |
 | Elitech RC-51H               |   0x04d8   |   0x0133   | Yes  | Yes    |
+| Elitech RC-5                 |   0x246c   |   0x9001   | Yes  | Yes    |
 | Elitech RC-5+                |   0x04d8   |   0x3005   | Yes  | Yes    |
 | Elitech RC-55                |   0x04d8   |   0x0037   | Yes  | No     |
 | Elitech TemLog 20            |   0x04d8   |   0x1014   | Yes  | No     |
@@ -54,6 +55,10 @@ column of the below table.
 |                              |   0x04d8   |   0xF564   | Yes  | No     |
 |                              |   0x0416   |   0x3A01   | Yes  | No     |
 |                              |   0x464d   |   0x0402   | No   | No     |
+
+Beware that the RC-5 exists in two flavours: the recent one, listed above,
+exposes an USB HID interface (and an USB mass storage interface), while
+the older one used an USB to serial chip and is *not* supported here (see below).
 
 If your device is not in this list:
   - Either it is an Elitech device of the previous generation, which used

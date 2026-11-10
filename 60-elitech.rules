@@ -22,10 +22,11 @@ ACTION=="remove",   GOTO="elitech_end"
 SUBSYSTEMS=="usb*", GOTO="elitech_usb"
 SUBSYSTEM=="*",     GOTO="elitech_end"
 
-# For USB devices, Elitech uses Vendor Ids 0x04d8 and 0x0416
+# For USB devices, Elitech uses Vendor Ids 0x04d8, 0x0416 and 0x246c
 LABEL="elitech_usb"
 KERNEL=="hidraw*", ATTRS{idVendor}=="04d8", GROUP="dialout", TAG="elitech"
 KERNEL=="hidraw*", ATTRS{idVendor}=="0416", GROUP="dialout", TAG="elitech"
+KERNEL=="hidraw*", ATTRS{idVendor}=="246c", GROUP="dialout", TAG="elitech"
 
 # End of rule files
 LABEL="elitech_end"

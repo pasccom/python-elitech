@@ -21,6 +21,13 @@ from warnings import warn as warning
 
 class Record:
     Length = 8
+    DefaultProtocol = 0x20
+    # From this protocol version on, records use the layout of `DataFactory.ParseRecord`
+    # in the official software (seen as 0x35 on the Elitech RC-5). The older devices
+    # (RC-5+, ...) report lower versions and keep the layout below.
+    NewFormatProtocol = 0x30
+    # Values the official software uses to mean "no reading" (°C or %RH)
+    NoData = (-100., -101., -111., -1001., -1002., -1003.)
 
     class Flags(IntFlag):
         Zero  = 0b00000000
@@ -69,7 +76,7 @@ class Record:
         return flags
 
     @classmethod
-    def parse(cls, frame, protocol=0x20):
+    def parse(cls, frame, protocol=DefaultProtocol):
         if (len(frame) != 8):
             raise ValueError(f"Invalid record length: {len(frame)}")
 
@@ -83,6 +90,9 @@ class Record:
 
         if (q == 0xFFFFFFFFFFFFFFFF):
             return None
+
+        if (protocol >= cls.NewFormatProtocol):
+            return cls.__parseNew(frame)
 
         humidity    = (q >> 54) & 0x3FF
         minute      = (q >> 48) & 0x03F
@@ -114,6 +124,43 @@ class Record:
         t = datetime(2000 + year, month, day, hour, minute, second)
 
         if (humidity == 0):
+            return cls(t, temperature, flags)
+        else:
+            return cls(t, temperature, flags, humidity)
+
+    @classmethod
+    def __parseNew(cls, frame):
+        # Record layout of `DataFactory.ParseRecord` in the official software, used by
+        # the recent devices (e.g. the Elitech RC-5, protocol version 0x35). The sign of
+        # the temperature is in bit 3 of the first byte, the sign of the humidity in bit 6.
+        b = frame
+        flags = b[0] & (int(cls.Flags.Mark) | int(cls.Flags.Pause) | int(cls.Flags.Stop)
+                        | int(cls.Flags.Light) | int(cls.Flags.Vibr))
+
+        second =  (b[1] >> 2) & 0x3F
+        year   = ((b[2]      ) & 0x7F) + 2000
+        month  = ((b[3] & 0x07) << 1) | ((b[2] >> 7) & 0x01)
+        day    =  (b[3] >> 3) & 0x1F
+        hour   =   b[4]        & 0x1F
+        minute =   b[6]        & 0x3F
+
+        temperature = (((b[1] >> 1) & 0x01) << 11) | (b[5] << 3) | (b[4] >> 5)
+        temperature = -temperature / 10. if (b[0] & 0x08) else temperature / 10.
+
+        humidity = (b[7] << 2) | (b[6] >> 6)
+        humidity = -humidity / 10. if (b[0] & 0x40) else humidity / 10.
+
+        if (year > 2099) or (month == 0) or (month > 12) or (day == 0) or (day > 31):
+            return None
+
+        t = datetime(year, month, day, hour, minute, second)
+
+        if temperature in cls.NoData:
+            flags |= int(cls.Flags.Error)
+        if humidity in cls.NoData:
+            humidity = None
+
+        if humidity is None:
             return cls(t, temperature, flags)
         else:
             return cls(t, temperature, flags, humidity)

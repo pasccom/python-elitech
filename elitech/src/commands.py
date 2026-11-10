@@ -518,6 +518,8 @@ class RecordRead(Command):
         if not self.__dev:
             warning(f"No device selected. Only there to check the request.")
 
+        protocol = self.__readProtocolVersion()
+
         answers = []
         r = self.__range.start or 0
         s = self.__range.step or 1
@@ -545,7 +547,7 @@ class RecordRead(Command):
         for a in answers:
             r = r0
             while (8*(r - r0) < a.range.len):
-                record = Record.parse(a[(8*r):(8*(r + 1))])
+                record = Record.parse(a[(8*r):(8*(r + 1))], protocol)
 
                 if record is None:
                     if self.__range.stop is None:
@@ -564,6 +566,17 @@ class RecordRead(Command):
                 r += s
             r0 = r
 
+
+    def __readProtocolVersion(self):
+        param = Parameters()['protocol-version']
+        frame = Frame(Frame.Operation.GetParameter, param.range.start, param.range.len)
+        with self.__dev:
+            self.__dev.write(bytes(frame))
+            try:
+                return param.parseData(frame.parse(self.__dev.read())[param.range]).value
+            except ValueError as e:
+                warning(f"Could not get the protocol version ({str(e)}). Assuming {Record.DefaultProtocol:#04x}.")
+                return Record.DefaultProtocol
 
     def __repr__(self):
         r = self.__range or '*'

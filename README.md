@@ -69,6 +69,12 @@ Due to the use of the `\dev` and `\sys` trees, this software will run only under
 
 USAGE
 -----
+## Cloning
+This project has submodules:
+  - `HIDParser` will be required as long as https://github.com/usb-tools/python-hid-parser/pull/30
+is not merged
+  - `PythonUtils` is only needed to run the unit tests.
+
 ## Installation
 After you downloaded *python-elitech*, no further installation steps are required
 as the (lightweight) dependences are provided as submodules for simplicity.

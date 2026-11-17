@@ -212,6 +212,7 @@ class Device:
         with open(Path('/sys/class/hidraw') / self.path.name / 'device' / 'report_descriptor', 'rb') as f:
             report = [int(b) for b in f.read()]
 
+        print("Descriptor: " + ' '.join([f'{b:02X}' for b in report]))
         with WarningFilter(HIDComplianceWarning):
             self.__descriptor = ReportDescriptor(report)
 
